@@ -1,0 +1,29 @@
+#!/bin/bash
+#version:	1.0
+#license:	MIT
+#author:	Simon Kowallik <github simonkowallik.com>
+#source:	https://github.com/simonkowallik/iHAC
+#
+IHACAUTH=$HOME/.ihac/auth.jar
+IHACPROXYFILE=$HOME/.ihac/IHACPROXY
+if [ -f $IHACPROXYFILE ]; then IHACPROXY="$(<$IHACPROXYFILE)"; fi
+if [ ! -z "$IHACPROXY" ]; then IHACPROXY="x $IHACPROXY"; fi
+
+function echoerr() { echo "$@" 1>&2; }
+
+if [ -n "$1" ] && [[ "$1" =~ ^[0-9]+$ ]] && [ -n "$2" ]
+then
+  fileid=`echo -n ${2#/} | base64 -w0`
+  curl -s$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/1.0" \
+   --cookie $IHACAUTH --cookie-jar $IHACAUTH \
+   -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$1/files/${fileid//=/}
+else
+  if [ -n "$1" ] && [[ $1 =~ ^[0-9]+$ ]]
+  then
+	echoerr "Error: no qkview ID specified or not valid."
+  else
+    echoerr "Error: no file specified."
+  fi
+  echoerr "Use: `basename $0` ID /path/file"
+  exit 1
+fi

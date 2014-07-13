@@ -13,8 +13,8 @@ It uses the [iHealth API](https://devcentral.f5.com/wiki/iHealth.HomePage.ashx) 
 
 # Installation
 Installation is a straightforward two step process:
-1. Download.
-2. Run it.
+ 1. Download.
+ 2. Run it.
 
 :)
 

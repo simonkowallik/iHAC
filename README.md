@@ -234,8 +234,8 @@ Pipe credentials from local to remote system for authentication and list all qkv
 ~ $ cat $HOME/auth.txt | ssh root@192.168.1.245 '/root/bin/ihac-auth; /root/bin/ihac-qkviewlist'
 Password:
 OK
-2483776 bigip.example.com              0570271                         Jun 30 2014, 06:59:43 PM (GMT)
-2483760 bigip.example.com              0570271                         Jun 30 2014, 06:54:47 PM (GMT)
+2483776 bigip.example.com              0570271                   Jun 30 2014, 06:59:43 PM (GMT)
+2483760 bigip.example.com              0570271                   Jun 30 2014, 06:54:47 PM (GMT)
 ```
 
 Pipe local qkview file to remote system and upload to iHealth

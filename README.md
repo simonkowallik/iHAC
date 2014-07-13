@@ -18,16 +18,7 @@ Installation is a straightforward two step process:
 
 :)
 
-#### On Mac OS (BSD tar)
-```sh
-simon@macos ~ $ sudo sh -c 'INSTALLDIR=/usr/local/bin; \
-	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
-	curl -L https://github.com/simonkowallik/iHAC/tarball/master \
-	| tar xzv --strip-components 1 -C $INSTALLDIR */ihac*; \
-	chmod a+x $INSTALLDIR/ihac-*'
-```
-
-#### On BIG-IP platforms (GNU tar)
+#### On BIG-IP platforms
 ```sh
 simon@bigip ~ $ INSTALLDIR=$HOME/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
@@ -37,7 +28,16 @@ simon@bigip ~ $ INSTALLDIR=$HOME/bin; \
 	chmod a+x $INSTALLDIR/ihac-*
 ```
 
-#### Other platforms (GNU tar)
+#### On Mac OS
+```sh
+simon@macos ~ $ sudo sh -c 'INSTALLDIR=/usr/local/bin; \
+	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
+	curl -L https://github.com/simonkowallik/iHAC/tarball/master \
+	| tar xzv --strip-components 1 -C $INSTALLDIR */ihac*; \
+	chmod a+x $INSTALLDIR/ihac-*'
+```
+
+#### Other platforms
 ```sh
 simon@other ~ $ INSTALLDIR=/usr/local/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
@@ -53,8 +53,8 @@ simon@bigip ~ $ curl -L https://github.com/simonkowallik/iHAC/tarball/master -o 
 ```
 
 If the CA chain validation for github.com fails on your system, you might try the following:
- a. Specify an alternative CA bundle by setting ```CURL_CA_BUNDLE=``` shell variable (see BIG-IP example above)
- b. Add the ```-k``` option to curl to ignore any validity checks, however this is **not recommended**.
+ 1. Specify an alternative CA bundle by setting ```CURL_CA_BUNDLE=``` shell variable (see BIG-IP example above)
+ 2. Add the ```-k``` option to curl to ignore any validity checks, however this is **not recommended**.
 
 If you need a proxy, use curls proxy option ```-x http://192.0.2.245:8080```.
 

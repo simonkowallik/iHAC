@@ -88,7 +88,8 @@ OK
 
 Adds qkview to iHealth, qkview file supplied via STDIN
 ```sh
-simon@bigip ~ $ cat ../qkviews/bigip1151.qkview | ihac-qkviewadd ################################################################## 100.0%
+simon@bigip ~ $ cat ../qkviews/bigip1151.qkview | ihac-qkviewadd
+################################################################## 100.0%
 2257819
 OK
 ```
@@ -230,7 +231,7 @@ simon@bigip ~ $ rm -f $HOME/.ihac/auth.jar
 # Usage Examples
 Pipe credentials from local to remote system for authentication and list all qkviews available on iHealth
 ```sh
-simon@local ~ $ cat $HOME/auth.txt | ssh -l root 192.168.1.245 '/root/bin/ihac-auth; /root/bin/ihac-qkviewlist'
+~ $ cat $HOME/auth.txt | ssh root@192.168.1.245 '/root/bin/ihac-auth; /root/bin/ihac-qkviewlist'
 Password:
 OK
 2483776 bigip.example.com              0570271                         Jun 30 2014, 06:59:43 PM (GMT)
@@ -239,7 +240,7 @@ OK
 
 Pipe local qkview file to remote system and upload to iHealth
 ```sh
-simon@local ~ $ cat qkview/bigip1141.qkview.tgz | ssh -l root 192.168.1.245 '/root/bin/ihac-qkviewadd'
+~ $ cat qkview/bigip1141.qkview.tgz | ssh root@192.168.1.245 '/root/bin/ihac-qkviewadd'
 Password:
 ################################################################## 100.0%
 OK
@@ -247,12 +248,12 @@ OK
 
 Get file from iHealth and send to remote system
 ```sh
-simon@local ~ $ ihac-fileget 2521684 /config/bigip.conf | ssh -l root 192.168.1.245 'cat > /tmp/bigip.conf'
+~ $ ihac-fileget 2521684 /config/bigip.conf | ssh root@192.168.1.245 'cat > /tmp/bigip.conf'
 ```
 
 Generate qkview on remote system, send via pipe to local system and upload to iHealth
 ```sh
-simon@local ~ $ ssh -l root 192.168.1.245 'qkview -f /var/tmp/qkview.tgz; cat /var/tmp/qkview.tgz' | ihac-qkviewadd
+~ $ ssh root@192.168.1.245 'qkview -f /var/tmp/qkview.tgz;cat /var/tmp/qkview.tgz' | ihac-qkviewadd
 Password:
 Gathering System Diagnostics: Please wait ...
 Diagnostic information has been saved in:

@@ -13,34 +13,50 @@ It uses the [iHealth API](https://devcentral.f5.com/wiki/iHealth.HomePage.ashx) 
 
 # Installation
 Installation is a straightforward two step process:
- 1. Download.
- 2. Run it.
+1. Download.
+2. Run it.
 
 :)
 
 #### On Mac OS (BSD tar)
 ```sh
-simon@macos ~ $ INSTALLDIR=/usr/local/bin; \
+simon@macos ~ $ sudo sh -c 'INSTALLDIR=/usr/local/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
 	curl -L https://github.com/simonkowallik/iHAC/tarball/master \
-	| tar xzv --strip-components 2 -C $INSTALLDIR */ihac*; \
+	| tar xzv --strip-components 1 -C $INSTALLDIR */ihac*; \
+	chmod a+x $INSTALLDIR/ihac-*'
+```
+
+#### On BIG-IP platforms (GNU tar)
+```sh
+simon@bigip ~ $ INSTALLDIR=$HOME/bin; \
+	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
+	CURL_CA_BUNDLE=/config/ssl/ssl.crt/ca-bundle.crt \
+	curl -L https://github.com/simonkowallik/iHAC/tarball/master \
+	| tar xzv --strip-components 1 --wildcards -C $INSTALLDIR */ihac*; \
 	chmod a+x $INSTALLDIR/ihac-*
 ```
 
-#### On all other platforms (GNU tar)
+#### Other platforms (GNU tar)
 ```sh
-simon@bigip ~ $ INSTALLDIR=/usr/local/bin; \
+simon@other ~ $ INSTALLDIR=/usr/local/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
 	curl -L https://github.com/simonkowallik/iHAC/tarball/master \
-	| tar xzv --strip-components 2 --wildcards -C $INSTALLDIR */ihac*; \
+	| tar xzv --strip-components 1 --wildcards -C $INSTALLDIR */ihac*; \
 	chmod a+x $INSTALLDIR/ihac-*
 ```
-Adjust ```INSTALLDIR``` to your needs. An alternative could be ```$HOME/bin``` which is in ```PATH``` by default on BIG-IP.
+Adjust ```INSTALLDIR``` to your needs. ```/usr/local/bin``` is mounted as read-only on BIG-IP therefore the default above is ```$HOME/bin``` which is in ```PATH``` by default.
 
 If you just want to get the tarball:
 ```sh
 simon@bigip ~ $ curl -L https://github.com/simonkowallik/iHAC/tarball/master -o $HOME/ihac.tgz
 ```
+
+If the CA chain validation for github.com fails on your system, you might try the following:
+ a. Specify an alternative CA bundle by setting ```CURL_CA_BUNDLE=``` shell variable (see BIG-IP example above)
+ b. Add the ```-k``` option to curl to ignore any validity checks, however this is **not recommended**.
+
+If you need a proxy, use curls proxy option ```-x http://192.0.2.245:8080```.
 
 # License
 [MIT](http://opensource.org/licenses/MIT)
@@ -76,7 +92,6 @@ simon@bigip ~ $ ihac-auth [--delete | -d | delete | --logout]
 OK
 ```
 
-
 ### ihac-qkviewadd
 Adds qkview to iHealth, qkview file supplied as argument
 ```sh
@@ -103,6 +118,7 @@ simon@bigip ~ $ ihac-qkviewlist
 2254055 bigip1151.example.com SerialNumber		May 7 2014, 20:59:32 AM (GMT) OptionalCaseNumber
 2254011 bigip1151.example.com SerialNumber		May 7 2014, 20:32:39 AM (GMT) OptionalCaseNumber
 ```
+The first column displays the qkview ID, which is important for all commands below.
 
 ### ihac-qkviewget
 Dowloads qkview from iHealth, output file specified as argument
@@ -163,7 +179,7 @@ ltm node /Common/10.0.0.10 {
 ### ihac-diagnostics
 Fetch iHealth Diagnostics and output to STDOUT
 ```sh
-simon@bigip ~ $ ihac-diagnostics 2483996 | head
+simon@bigip ~ $ ihac-diagnostics 2254055 | head
 Hostname: bip1141.example.net    Serial: Serial Number
 Version: Version		  	     Platform: Platform
 
@@ -175,8 +191,8 @@ Version: Version		  	     Platform: Platform
 
 Filter for Severity with egrep
 ```sh
-simon@bigip ~ $ ihac-diagnostics 2483996 | egrep -A3 "MEDIUM|^(P|H)"
-simon@bigip ~ $ ihac-diagnostics 2483996 | egrep -A3 "HIGH|MEDIUM|^(P|H)"
+simon@bigip ~ $ ihac-diagnostics 2254055 | egrep -A3 "MEDIUM|^(P|H)"
+simon@bigip ~ $ ihac-diagnostics 2254055 | egrep -A3 "HIGH|MEDIUM|^(P|H)"
 ```
 
 # Proxy Support

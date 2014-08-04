@@ -25,8 +25,8 @@ This is the list of prerequisites:
 
 BIG-IP 11.x: Works right away
 Mac OS: Works right away
-Ubuntu / Debian: ```apt-get install libxml-simple-perl``` 
-RedHat / CentOS: ```yum install perl-XML-Simple``` 
+Ubuntu / Debian: ```apt-get install libxml-simple-perl```
+RedHat / CentOS: ```yum install perl-XML-Simple```
 Cygwin: Install ```curl``` and ```perl-XML-Simple``` through the Cygwin Setup
 
 ### 2. Download

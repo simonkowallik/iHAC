@@ -2,23 +2,35 @@
 The iHAC (iHealth API Clients) script collection aims to be a simple and easy to use interface to a subset of features provided by [F5 iHealth](https://ihealth.f5.com).
 It uses the [iHealth API](https://devcentral.f5.com/wiki/iHealth.HomePage.ashx) which is documented on [F5 DevCentral](https://devcentral.f5.com).
 
-### Features Overview
+### Feature Overview
 * Upload qkviews
 * List existing qkviews
 * Download qkviews
 * Delete qkviews
 * List files
 * Download files
+* List commands
+* Run commands
 * Show diagnostics
 
 # Installation
-Installation is a straightforward two step process:
- 1. Download.
- 2. Run it.
+### 1. Install prerequisites
+This is the list of prerequisites:
+* coreutils (tested with: 5.97, 8.15)
+* curl (tested with: 7.15.5 7.19.7, 7.30.0, 7.37.0)
+* bash (tested with: 3.2.25, 3.2.51, 4.1.11)
+* perl (tested with: 5.8.8, 5.14.4, 5.16.2)
+	* XML::Simple (used for ihac-diagnostics XML parsing) 
+	* MIME::Base64 (used for ihac-commandrun output conversion)
 
-:)
+BIG-IP 11.x: Works right away
+Mac OS: Works right away
+Ubuntu / Debian: ```apt-get install libxml-simple-perl```
+RedHat / CentOS: ```yum install perl-XML-Simple```
+Cygwin: Install ```curl``` and ```perl-XML-Simple``` through the Cygwin Setup
 
-#### On BIG-IP platforms
+### 2. Download
+#### On BIG-IP
 ```sh
 simon@bigip ~ $ INSTALLDIR=$HOME/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
@@ -57,6 +69,9 @@ If the CA chain validation for github.com fails on your system, you might try th
  2. Add the ```-k``` option to curl to ignore any validity checks, however this is **not recommended**.
 
 If you need a proxy, use curls proxy option ```-x http://192.0.2.245:8080```.
+
+### 3. Run
+Have fun. :)
 
 # License
 [MIT](http://opensource.org/licenses/MIT)
@@ -161,7 +176,7 @@ simon@bigip ~ $ ihac-filelist 2254055 | grep /config/bigip | head -5
 ```
 
 ### ihac-fileget
-Get file from qkview on ihealth, outputs file content to STDOUT
+Get file from qkview on iHealth, outputs file content to STDOUT
 ```sh
 simon@bigip ~ $ ihac-fileget 2254055 /config/bigip.conf | head
 #TMSH-VERSION: 11.5.1
@@ -174,6 +189,48 @@ ltm default-node-monitor {
 ltm node /Common/10.0.0.10 {
     address 10.0.0.10
 }
+```
+
+### ihac-commandlist
+Lists all commands available for a specific qkview, outputs command list to STDOUT
+```sh
+simon@bigip ~ $ ihac-commandlist 2254055 | grep /sys | head
+show running-config /sys management-ip
+show running-config /sys management-route all-properties
+list /sys application service recursive all-properties
+list /sys cluster all-properties
+list /sys daemon-ha all-properties
+list /sys db all-properties
+list /sys db all-properties (non-default values)
+list /sys db systemauth.source all-properties
+list /sys disk all-properties
+list /sys feature-module all-properties
+```
+
+### ihac-commandrun
+Fetches command output from qkview on iHealth to STDOUT
+```sh
+simon@bigip ~ $ ihac-commandrun 2254055 ‘show /sys provision’
+-------------------------------------------------------------
+Sys::Provision
+Module   CPU (%)   Memory (MB)   Host-Memory (MB)   Disk (MB)
+-------------------------------------------------------------
+afm            1           466                720        3900
+am             0             0                  0           0
+apm            0             0                  0           0
+asm            0             0                  0           0
+avr            0             0                  0           0
+em             0             0                  0           0
+gtm            0             0                  0           0
+host          10          2896                  0       47984
+lc             0             0                  0           0
+ltm            1             0                  0           0
+tmos          88          4640                280           0
+ui             0           224                  0           0
+vcmp           0             0                  0           0
+
+simon@bigip ~ # ihac-commandrun 2254055 'tmctl -a (blade)' | wc -l
+4757
 ```
 
 ### ihac-diagnostics

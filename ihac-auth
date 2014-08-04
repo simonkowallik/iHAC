@@ -1,5 +1,5 @@
 #!/bin/bash
-#version:	1.0
+#version:	1.1
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
@@ -38,7 +38,7 @@ then
 else
   if [ "$1" == "delete" ] || [ "$1" == "--delete" ] || [ "$1" == "-d" ] || [ "$1" == "--logout" ]
   then
-    echo "OK" # deleted on line 5
+    echo "OK" # deleted on line 9
 	exit 0
   elif [ ! -z "$1" ]
   then
@@ -53,10 +53,14 @@ else
   fi
 fi
 
-curl -si$IHACPROXY --user-agent "iHAC/1.0" --cookie-jar $IHACAUTH \
+result=`curl -si$IHACPROXY --user-agent "iHAC/1.0" --cookie-jar $IHACAUTH \
  --data $USRPW \
  -o - https://login.f5.com/resource/loginAction.jsp \
  | sort -r \
  | perl -ne 's/\r\n//g;
-	if(m/ssosession/gi) {print "OK\n";exit 0}
-	if(m/login.jsp/gi)  {print STDERR "Error: authentication failed.\n";exit 1}'
+	if(m/ssosession/gi) {print "OK";exit 0}
+	if(m/login.jsp/gi)  {print "auth_failed";exit 0}'`
+
+if [ "$result" == "OK" ]; then echo "OK"; exit 0; fi
+if [ "$result" == "auth_failed" ]; then echoerr "Error: authentication failed."; exit 1; fi
+if [ -z "$result" ]; then echoerr "Error: Unknown error occurred."; exit 1; fi

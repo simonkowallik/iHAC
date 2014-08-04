@@ -1,5 +1,5 @@
 #!/bin/bash
-#version:	1.0
+#version:	1.1
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
@@ -34,4 +34,11 @@ curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent 
 	if(m|http/1.. 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
 	if(m|http/1.. (40\d)|gi) {print STDERR "Error: received $1 from server.\n";exit 1}
 	if(m|<hostname>(.*)</hostname>|gi) {$hostname=$1}
-	if(m|<chassis_serial>(.*)</chassis_serial>.*<f5_support_case>(.*)</f5_support_case>.*<date>(.*)</date>.*/api/qkviews/(\d+)/bigip.xml</bigip>|gi) {printf "%d %-30s %-31s %-12s %s\n", $4, $hostname, $1, $3, $2}'
+	if(m|<chassis_serial>(.*)</chassis_serial>|gi) {$serial=$1}
+	if(m|<f5_support_case>(.*)</f5_support_case>|gi) {$case=$1}
+	if(m|<date>(.*)</date>|gi) {$date=$1}
+	if(m|<bigip>.*/(\d+)/.*</bigip>|gi) {$id=$1}
+	if (defined($hostname) && defined($serial) && defined($case) && defined($date) && defined($id)) {
+		printf "%d %-30s %-31s %-12s %s\n", $id, $hostname, $serial, $date, $case;
+		undef $id, $hostname, $serial, $date, $case;
+	}'

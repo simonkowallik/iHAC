@@ -24,9 +24,13 @@ This is the list of prerequisites:
 	* MIME::Base64 (used for ihac-commandrun output conversion)
 
 BIG-IP 11.x: Works right away
+
 Mac OS: Works right away
+
 Ubuntu / Debian: ```apt-get install libxml-simple-perl```
+
 RedHat / CentOS: ```yum install perl-XML-Simple```
+
 Cygwin: Install ```curl``` and ```perl-XML-Simple``` through the Cygwin Setup
 
 ### 2. Download

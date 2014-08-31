@@ -33,7 +33,7 @@ RedHat / CentOS: ```yum install perl-XML-Simple```
 
 Cygwin: Install ```curl``` and ```perl-XML-Simple``` through the Cygwin Setup
 
-### 2. Download
+### 2. Download / Install / Update
 #### On BIG-IP
 ```sh
 simon@bigip ~ $ INSTALLDIR=$HOME/bin; \
@@ -112,20 +112,22 @@ OK
 ```
 
 ### ihac-qkviewadd
-Adds qkview to iHealth, qkview file supplied as argument
+Adds qkview to iHealth, qkview file supplied as argument. You can specify as many qkviews as arguments as you want.
 ```sh
-simon@bigip ~ $ ihac-qkviewadd ../qkviews/bigip1151.qkview
+simon@bigip ~ $ ihac-qkviewadd ../qkviews/bigip1141.qkview ../qkviews/bigip1151.qkview ../qkviews/bigip1160.qkview
 ################################################################## 100.0%
-2257811
-OK
+2257810 OK
+################################################################## 100.0%
+2257812 OK
+################################################################## 100.0%
+2257814 OK
 ```
 
 Adds qkview to iHealth, qkview file supplied via STDIN
 ```sh
 simon@bigip ~ $ cat ../qkviews/bigip1151.qkview | ihac-qkviewadd
 ################################################################## 100.0%
-2257819
-OK
+2257819 OK
 ```
 
 ### ihac-qkviewlist
@@ -161,11 +163,11 @@ simon@bigip ~ $ ls -la 2254011.qkview.tar
 ```
 
 ### ihac-qkviewdelete
-Deletes qkview from iHealth
+Deletes qkview from iHealth. You can specify as many qkview IDs as arguments as you want.
 ```sh
-simon@bigip ~ $ ihac-qkviewdelete 2257811
-2257811
-OK
+simon@bigip ~ $ ihac-qkviewdelete 2257810 2257812
+2257810 OK
+2257812 OK
 ```
 
 ### ihac-filelist

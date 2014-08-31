@@ -1,17 +1,17 @@
 #!/bin/bash
-#version:	1.1
+#version:	1.2
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
 #
-IHACAUTH=$HOME/.ihac/auth.jar
-if [ ! -d $HOME/.ihac ]; then mkdir $HOME/.ihac; fi
-if [ -f $IHACAUTH ]; then rm -f $IHACAUTH; fi
-touch $IHACAUTH; chmod 0600 $IHACAUTH; 
+IHACAUTH="$HOME/.ihac/auth.jar"
+if [[ ! -d "$HOME/.ihac" ]]; then mkdir "$HOME/.ihac"; fi
+if [[ -f "$IHACAUTH" ]]; then rm -f "$IHACAUTH"; fi
+touch "$IHACAUTH"; chmod 0600 "$IHACAUTH"; 
 
-IHACPROXYFILE=$HOME/.ihac/IHACPROXY
-if [ -f $IHACPROXYFILE ]; then IHACPROXY="$(<$IHACPROXYFILE)"; fi
-if [ ! -z "$IHACPROXY" ]; then IHACPROXY="x $IHACPROXY"; fi
+IHACPROXYFILE="$HOME/.ihac/IHACPROXY"
+if [[ -f "$IHACPROXYFILE" ]]; then IHACPROXY="$(<$IHACPROXYFILE)"; fi
+if [[ ! -z "$IHACPROXY" ]]; then IHACPROXY="x $IHACPROXY"; fi
 
 function echoerr() { echo "$@" 1>&2; }
 function urlencode() {
@@ -26,34 +26,35 @@ function urlencode() {
   done
 }
 
-if [ -z "$1" ] && [ -t 0 ]
+if [[ -z "$1" ]] && [[ -t 0 ]]
 then
   echo -n "Username: "
   read username
-  if [ -z "$username" ]; then echoerr "Error: need username to authenticate."; exit 1; fi
+  if [[ -z "$username" ]]; then echoerr "Error: need username to authenticate."; exit 1; fi
   echo -n "Password: "
   read -s password && echo
-  if [ -z "$password" ]; then echoerr "Error: need password to authenticate."; exit 1; fi
+  if [[ -z "$password" ]]; then echoerr "Error: need password to authenticate."; exit 1; fi
   USRPW="userid=$(urlencode $username)&passwd=$(urlencode $password)"
 else
-  if [ "$1" == "delete" ] || [ "$1" == "--delete" ] || [ "$1" == "-d" ] || [ "$1" == "--logout" ]
+  if [[ "$1" == "delete" ]] || [[ "$1" == "--delete" ]] || [[ "$1" == "-d" ]] || [[ "$1" == "--logout" ]]
   then
-    echo "OK" # deleted on line 9
+	if [[ -f "$IHACAUTH" ]]; then rm -f "$IHACAUTH"; fi
+    echo "OK"
 	exit 0
-  elif [ ! -z "$1" ]
+  elif [[ ! -z "$1" ]]
   then
     USRPW=$1
-  elif [ ! -t 0 ]
+  elif [[ ! -t 0 ]]
   then
     read USRPW
-	if [ -z "$USRPW" ]; then echoerr "Error: need credentials to authenticate."; exit 1; fi
+	if [[ -z "$USRPW" ]]; then echoerr "Error: need credentials to authenticate."; exit 1; fi
   else
 	echoerr "Error: need credentials to authenticate."
 	exit 1
   fi
 fi
 
-result=`curl -si$IHACPROXY --user-agent "iHAC/1.0" --cookie-jar $IHACAUTH \
+result=`curl -si$IHACPROXY --user-agent "iHAC/1.0" --cookie-jar "$IHACAUTH" \
  --data $USRPW \
  -o - https://login.f5.com/resource/loginAction.jsp \
  | sort -r \
@@ -61,6 +62,6 @@ result=`curl -si$IHACPROXY --user-agent "iHAC/1.0" --cookie-jar $IHACAUTH \
 	if(m/ssosession/gi) {print "OK";exit 0}
 	if(m/login.jsp/gi)  {print "auth_failed";exit 0}'`
 
-if [ "$result" == "OK" ]; then echo "OK"; exit 0; fi
-if [ "$result" == "auth_failed" ]; then echoerr "Error: authentication failed."; exit 1; fi
-if [ -z "$result" ]; then echoerr "Error: Unknown error occurred."; exit 1; fi
+if [[ "$result" == "OK" ]]; then echo "OK"; exit 0; fi
+if [[ "$result" == "auth_failed" ]]; then echoerr "Error: authentication failed."; exit 1; fi
+if [[ -z "$result" ]]; then echoerr "Error: Unknown error occurred."; exit 1; fi

@@ -1,21 +1,21 @@
 #!/bin/bash
-#version:	1.0
+#version:	1.1
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
 #
-IHACAUTH=$HOME/.ihac/auth.jar
-IHACPROXYFILE=$HOME/.ihac/IHACPROXY
-if [ -f $IHACPROXYFILE ]; then IHACPROXY="$(<$IHACPROXYFILE)"; fi
-if [ ! -z "$IHACPROXY" ]; then IHACPROXY="x $IHACPROXY"; fi
+IHACAUTH="$HOME/.ihac/auth.jar"
+IHACPROXYFILE="$HOME/.ihac/IHACPROXY"
+if [[ -f "$IHACPROXYFILE" ]]; then IHACPROXY="$(<$IHACPROXYFILE)"; fi
+if [[ ! -z "$IHACPROXY" ]]; then IHACPROXY="x $IHACPROXY"; fi
 
 function echoerr() { echo "$@" 1>&2; }
 
-if [ -n "$1" ] && [[ "$1" =~ ^[0-9]+$ ]]
+if [[ -n "$1" ]] && [[ "$1" =~ ^[0-9]+$ ]]
 then
   curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/1.0" \
-   --cookie $IHACAUTH --cookie-jar $IHACAUTH \
-   -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$1/diagnostics?set=hit \
+   --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
+   -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$1/diagnostics?set=all \
   | perl -ne 's/\r\n//g;
 	if(m|http/1.. 200|gi) {$ok=1} else {
 	  if(m|http/1.. 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
@@ -30,6 +30,7 @@ then
 		print "Version: $hs_ver->{version} $hs_ver->{edition}\t Platform: $hs_sys->{platform}\n\n";
 		$diag = $xml->{diagnostics}->{diagnostic};
 		foreach $hs ( sort { reverse($diag->{$a}->{run_data}->{h_importance}) cmp reverse($diag->{$b}->{run_data}->{h_importance}) } keys %{$diag} ) {
+		  next if($diag->{$hs}->{run_data}->{match} eq "false");
 		  $hs_r = $diag->{$hs}->{results}; $hs_s = $hs_r->{h_sols}->{solution};
 		  print "* Severity: $diag->{$hs}->{run_data}->{h_importance} \tHeuristic: $hs_r->{h_name}\n";
 		  print "* Title:\t$hs_r->{h_header}\n";

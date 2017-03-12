@@ -114,7 +114,7 @@ OK
 ### ihac-qkviewadd
 Adds qkview to iHealth, qkview file supplied as argument. You can specify as many qkviews as arguments as you want.
 ```sh
-simon@bigip ~ $ ihac-qkviewadd ../qkviews/bigip1141.qkview ../qkviews/bigip1151.qkview ../qkviews/bigip1160.qkview
+simon@bigip ~ $ ihac-qkviewadd ../bigip1141.qkview ./bigip1151.qkview bigip1160.qkview
 ################################################################## 100.0%
 2257810 OK
 ################################################################## 100.0%
@@ -134,10 +134,10 @@ simon@bigip ~ $ cat ../qkviews/bigip1151.qkview | ihac-qkviewadd
 Lists all qkviews available on iHealth
 ```sh
 simon@bigip ~ $ ihac-qkviewlist
-2257819 bigip1151.example.com SerialNumber		May 8 2014, 21:12:29 AM (GMT) OptionalCaseNumber
-2257811 bigip1151.example.com SerialNumber		May 8 2014, 21:10:19 AM (GMT) OptionalCaseNumber
-2254055 bigip1151.example.com SerialNumber		May 7 2014, 20:59:32 AM (GMT) OptionalCaseNumber
-2254011 bigip1151.example.com SerialNumber		May 7 2014, 20:32:39 AM (GMT) OptionalCaseNumber
+2257819 bigip1151.example.com SerialNumber	  May 8 2014, 21:12:29 AM (GMT) OptionalCaseNumber
+2257811 bigip1151.example.com SerialNumber	  May 8 2014, 21:10:19 AM (GMT) OptionalCaseNumber
+2254055 bigip1151.example.com SerialNumber	  May 7 2014, 20:59:32 AM (GMT) OptionalCaseNumber
+2254011 bigip1151.example.com SerialNumber	  May 7 2014, 20:32:39 AM (GMT) OptionalCaseNumber
 ```
 The first column displays the qkview ID, which is important for all commands below.
 
@@ -310,11 +310,11 @@ simon@bigip ~ $ rm -f $HOME/.ihac/auth.jar
 # Usage Examples
 Pipe credentials from local to remote system for authentication and list all qkviews available on iHealth
 ```sh
-~ $ cat $HOME/auth.txt | ssh root@192.168.1.245 '/root/bin/ihac-auth; /root/bin/ihac-qkviewlist'
+~ $ cat $HOME/auth.txt | ssh root@192.168.1.245 '/root/bin/ihac-auth;/root/bin/ihac-qkviewlist'
 Password:
 OK
-2483776 bigip.example.com              0570271                   Jun 30 2014, 06:59:43 PM (GMT)
-2483760 bigip.example.com              0570271                   Jun 30 2014, 06:54:47 PM (GMT)
+2483776 bigip.example.com           0570271                Jun 30 2014, 06:59:43 PM (GMT)
+2483760 bigip.example.com           0570271                Jun 30 2014, 06:54:47 PM (GMT)
 ```
 
 Pipe local qkview file to remote system and upload to iHealth

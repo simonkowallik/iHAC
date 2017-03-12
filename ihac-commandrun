@@ -1,5 +1,5 @@
 #!/bin/bash
-#version:	1.2
+#version:	2.0
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
@@ -11,6 +11,9 @@ if [[ ! -z "$IHACPROXY" ]]; then IHACPROXY="x $IHACPROXY"; fi
 
 function echoerr() { echo "$@" 1>&2; }
 
+command -v perl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires perl but it is not installed."; exit 1; }
+command -v curl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires curl but it is not installed."; exit 1; }
+
 if [[ -n "$1" ]] && [[ "$1" =~ ^[0-9]+$ ]] && [[ -n "$2" ]]
 then
   if command -v sha1sum > /dev/null
@@ -19,7 +22,7 @@ then
   else
 	cmdid=(`echo -n $2 | shasum`)
   fi
-  curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/1.0" \
+  curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/2.0" \
    --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
    -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$1/commands/${cmdid[0]} \
   | perl -MMIME::Base64 -ne 's/[\r\n]+//g;

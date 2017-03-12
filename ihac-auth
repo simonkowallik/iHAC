@@ -1,5 +1,5 @@
 #!/bin/bash
-#version:	1.2
+#version:	2.0
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
@@ -26,6 +26,8 @@ function urlencode() {
   done
 }
 
+command -v curl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires curl but it is not installed."; exit 1; }
+
 if [[ -z "$1" ]] && [[ -t 0 ]]
 then
   echo -n "Username: "
@@ -41,6 +43,9 @@ else
 	if [[ -f "$IHACAUTH" ]]; then rm -f "$IHACAUTH"; fi
     echo "OK"
 	exit 0
+  elif [[ ! -z "$1" ]] && [[ -s "$1" ]]
+  then
+    USRPW=$(<$1)
   elif [[ ! -z "$1" ]]
   then
     USRPW=$1
@@ -54,7 +59,7 @@ else
   fi
 fi
 
-result=`curl -si$IHACPROXY --user-agent "iHAC/1.0" --cookie-jar "$IHACAUTH" \
+result=`curl -si$IHACPROXY --user-agent "iHAC/2.0" --cookie-jar "$IHACAUTH" \
  --data $USRPW \
  -o - https://login.f5.com/resource/loginAction.jsp \
  | sort -r \

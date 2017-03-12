@@ -1,5 +1,5 @@
 #!/bin/bash
-#version:	1.1
+#version:	2.0
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
@@ -10,6 +10,9 @@ if [[ -f "$IHACPROXYFILE" ]]; then IHACPROXY="$(<$IHACPROXYFILE)"; fi
 if [[ ! -z "$IHACPROXY" ]]; then IHACPROXY="x $IHACPROXY"; fi
 
 function echoerr() { echo "$@" 1>&2; }
+
+command -v perl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires perl but it is not installed."; exit 1; }
+command -v curl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires curl but it is not installed."; exit 1; }
 
 if [[ "$#" -gt 0 ]]
 then
@@ -26,7 +29,7 @@ fi
 
 for QKVIEW in "${QKVIEWS[@]}"; do
 if [[ -f "$QKVIEW" ]] || [[ "$QKVIEW" == "-" ]]; then
-curl --progress-bar -i$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/1.0" \
+curl --progress-bar -i$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/2.0" \
  --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
  -F "qkview=@$QKVIEW" -F 'visible_in_gui=True' \
  -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews \

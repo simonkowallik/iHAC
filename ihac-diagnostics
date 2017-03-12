@@ -1,5 +1,5 @@
 #!/bin/bash
-#version:	1.1
+#version:	2.0
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
@@ -11,35 +11,44 @@ if [[ ! -z "$IHACPROXY" ]]; then IHACPROXY="x $IHACPROXY"; fi
 
 function echoerr() { echo "$@" 1>&2; }
 
+command -v perl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires perl but it is not installed."; exit 1; }
+command -v curl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires curl but it is not installed."; exit 1; }
+
 if [[ -n "$1" ]] && [[ "$1" =~ ^[0-9]+$ ]]
 then
-  curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/1.0" \
+  curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/2.0" \
    --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
    -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$1/diagnostics?set=all \
-  | perl -ne 's/\r\n//g;
-	if(m|http/1.. 200|gi) {$ok=1} else {
-	  if(m|http/1.. 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
-	  if(m|http/1.. 404|gi)  {print STDERR "Error: qkview ID not found.\n";exit 1}
-	}
-	if($ok && m/<\?xml/gi) { 
-		use XML::Simple;
-		eval {$xml = new XML::Simple->XMLin($_)};
-		if ($@) {print STDERR "Error: Could not parse XML: $@\n";exit 1}
-		$hs_ver = $xml->{version}; $hs_sys = $xml->{system_information};
-		print "Hostname: $hs_sys->{hostname}\t Serial: $hs_sys->{bigip_chassis_serial_num}\n";
-		print "Version: $hs_ver->{version} $hs_ver->{edition}\t Platform: $hs_sys->{platform}\n\n";
-		$diag = $xml->{diagnostics}->{diagnostic};
-		foreach $hs ( sort { reverse($diag->{$a}->{run_data}->{h_importance}) cmp reverse($diag->{$b}->{run_data}->{h_importance}) } keys %{$diag} ) {
-		  next if($diag->{$hs}->{run_data}->{match} eq "false");
-		  $hs_r = $diag->{$hs}->{results}; $hs_s = $hs_r->{h_sols}->{solution};
-		  print "* Severity: $diag->{$hs}->{run_data}->{h_importance} \tHeuristic: $hs_r->{h_name}\n";
-		  print "* Title:\t$hs_r->{h_header}\n";
-		  print "* Summary:\t$hs_r->{h_summary}\n";
-		  print "* SOLs:\t\t"; if (ref($hs_s) eq "ARRAY") {print join(", ", @{$hs_s})} else {print $hs_s}
-		  print "\n\n";
-		}
-		exit 0;
-	}'
+  | perl -e '
+    my $xmldata;
+    while (<STDIN>) {
+        s/\r\n//g; s/\n//g; s/\r//g; s/\t/ /g;
+        if(m|http/1.. 200|gi) {$response=1} else {
+            if(m|http/1.. 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+            if(m|http/1.. 404|gi)  {print STDERR "Error: qkview ID not found.\n";exit 1}
+        }
+        if($response && m/<\?xml/gi) {$xml_response=1}
+        if($xml_response) {$xmldata .= $_}
+    }
+    eval {require XML::Simple};
+    if ($@) {print STDERR "Error: ihac-diagnostics requires perl module XML::Simple but it is not installed. Perl error: $@\n";exit 1}
+    eval {$xml = new XML::Simple->XMLin($xmldata)};
+    if ($@) {print STDERR "Error: Could not parse XML: $@\n";exit 1}
+    $hs_ver = $xml->{version}; $hs_sys = $xml->{system_information};
+    print "Hostname: $hs_sys->{hostname}\t Serial: $hs_sys->{bigip_chassis_serial_num}\n";
+    print "Version: $hs_ver->{version} $hs_ver->{edition}\t Platform: $hs_sys->{platform}\n\n";
+    $diag = $xml->{diagnostics}->{diagnostic};
+    foreach $hs ( sort { reverse($diag->{$a}->{run_data}->{h_importance}) cmp reverse($diag->{$b}->{run_data}->{h_importance}) } keys %{$diag} ) {
+        next if($diag->{$hs}->{run_data}->{match} eq "false");
+        $hs_r = $diag->{$hs}->{results}; $hs_s = $hs_r->{h_sols}->{solution};
+        print "* Severity: $diag->{$hs}->{run_data}->{h_importance} \tHeuristic: $hs_r->{h_name}\n";
+        print "* Title:\t$hs_r->{h_header}\n";
+        print "* Summary:\t$hs_r->{h_summary}\n";
+        print "* SOLs:\t\t"; if (ref($hs_s) eq "ARRAY") {print join(", ", @{$hs_s})} else {print $hs_s}
+        print "\n\n";
+    }
+    exit 0;
+  '
 else
   echoerr "Error: no qkview ID specified or not valid."
   echoerr "Use: `basename $0` ID"

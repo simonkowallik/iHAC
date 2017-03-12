@@ -1,5 +1,5 @@
 #!/bin/bash
-#version:	1.2
+#version:	2.0
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
@@ -11,7 +11,10 @@ if [[ ! -z "$IHACPROXY" ]]; then IHACPROXY="x $IHACPROXY"; fi
 
 function echoerr() { echo "$@" 1>&2; }
 
-for id in `curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/1.0" \
+command -v perl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires perl but it is not installed."; exit 1; }
+command -v curl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires curl but it is not installed."; exit 1; }
+
+for id in `curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/2.0" \
  --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
  -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews \
   | perl -ne 's/\r\n//g;
@@ -22,23 +25,23 @@ for id in `curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --
 do
   if [[ "$id" == "ERR" ]]; then exit 1; fi
   if [[ ! "$id" =~ ^[0-9]+$ ]]; then echoerr "Error: $id is not a valid qkview ID."; exit 1; fi
-  URLS="$URLS https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$id/bigip/system/hostname https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$id"
+  URLS="$URLS https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$id"
 done
 if [[ -z "$URLS" ]]; then echoerr "Error: no qkview IDs recevied."; exit 1; fi
 
-curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/1.0" \
+curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/2.0" \
  --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
  -o - \
  $URLS \
-| perl -ne 's/\r\n//g;
-	if(m|http/1.. 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
-	if(m|http/1.. (40\d)|gi) {print STDERR "Error: received $1 from server.\n";exit 1}
-	if(m|<hostname>(.*)</hostname>|gi) {$hostname=$1}
-	if(m|<chassis_serial>(.*)</chassis_serial>|gi) {$serial=$1}
-	if(m|<f5_support_case>(.*)</f5_support_case>|gi) {$case=$1}
-	if(m|<date>(.*)</date>|gi) {$date=$1}
-	if(m|<bigip>.*/(\d+)/.*</bigip>|gi) {$id=$1}
-	if (defined($hostname) && defined($serial) && defined($case) && defined($date) && defined($id)) {
-		printf "%d %-30s %-31s %-12s %s\n", $id, $hostname, $serial, $date, $case;
-		undef $id, $hostname, $serial, $date, $case;
-	}'
+ | perl -ne 's/\r\n//g;
+    if(m|http/1.. 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+    if(m|http/1.. (40\d)|gi) {print STDERR "Error: received $1 from server.\n";exit 1}
+    if(m|<chassis_serial>(.*)</chassis_serial>|gi) {$serial=$1}
+    if(m|<hostname>(.*)</hostname>|gi) {$hostname=$1}
+    if(m|<f5_support_case>(.*)</f5_support_case>|gi) {$case=$1}
+    if(m|<date>(.*)000</date>|gi) {$date=$1}
+    if(m|<bigip>.*/(\d+)/.*</bigip>|gi) {$id=$1}
+    if (  defined($id)) {
+        printf "%d %-30s %-31s %-12s %s\n", $id, $hostname, $serial, scalar localtime($date), $case;
+        undef $id, $hostname, $serial, $date, $case;
+    }'

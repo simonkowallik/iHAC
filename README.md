@@ -44,6 +44,12 @@ simon@bigip ~ $ INSTALLDIR=$HOME/bin; \
 	chmod a+x $INSTALLDIR/ihac-*
 ```
 
+#### Homebrew / Linuxbrew
+```sh
+simon@macos ~ $ brew install simonkowallik/f5/ihac
+```
+If you want to receive updates when running `brew update` add my tap with `brew tap simonkowallik/f5`.
+
 #### On Mac OS
 ```sh
 simon@macos ~ $ sudo sh -c 'INSTALLDIR=/usr/local/bin; \

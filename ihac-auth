@@ -1,8 +1,8 @@
 #!/bin/bash
-#version:	2.0
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
+VERSION="2.1"
 #
 IHACAUTH="$HOME/.ihac/auth.jar"
 if [[ ! -d "$HOME/.ihac" ]]; then mkdir "$HOME/.ihac"; fi
@@ -59,7 +59,7 @@ else
   fi
 fi
 
-result=`curl -si$IHACPROXY --user-agent "iHAC/2.0" --cookie-jar "$IHACAUTH" \
+result=`curl -si$IHACPROXY --user-agent "iHAC/$VERSION" --cookie-jar "$IHACAUTH" \
  --data $USRPW \
  -o - https://login.f5.com/resource/loginAction.jsp \
  | sort -r \

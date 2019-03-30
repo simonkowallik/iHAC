@@ -1,8 +1,8 @@
 #!/bin/bash
-#version:	2.0
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
+VERSION="2.1"
 #
 IHACAUTH="$HOME/.ihac/auth.jar"
 IHACPROXYFILE="$HOME/.ihac/IHACPROXY"
@@ -17,7 +17,7 @@ command -v curl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires cur
 
 if [[ -n "$1" ]] && [[ "$1" =~ ^[0-9]+$ ]]
 then
-  curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/2.0" \
+  curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
    --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
    -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$1/commands \
   | perl -ne 's/\r\n//g;

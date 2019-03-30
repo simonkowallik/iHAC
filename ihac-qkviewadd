@@ -1,8 +1,8 @@
 #!/bin/bash
-#version:	2.0
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
+VERSION="2.1"
 #
 IHACAUTH="$HOME/.ihac/auth.jar"
 IHACPROXYFILE="$HOME/.ihac/IHACPROXY"
@@ -29,7 +29,7 @@ fi
 
 for QKVIEW in "${QKVIEWS[@]}"; do
 if [[ -f "$QKVIEW" ]] || [[ "$QKVIEW" == "-" ]]; then
-curl --progress-bar -i$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/2.0" \
+curl --progress-bar -i$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
  --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
  -F "qkview=@$QKVIEW" -F 'visible_in_gui=True' \
  -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews \

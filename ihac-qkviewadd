@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC

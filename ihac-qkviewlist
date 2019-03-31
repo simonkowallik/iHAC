@@ -1,8 +1,8 @@
-#!/bin/bash
-#version:	2.0
+#!/usr/bin/env bash
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
+VERSION="2.1"
 #
 IHACAUTH="$HOME/.ihac/auth.jar"
 IHACPROXYFILE="$HOME/.ihac/IHACPROXY"
@@ -14,7 +14,7 @@ function echoerr() { echo "$@" 1>&2; }
 command -v perl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires perl but it is not installed."; exit 1; }
 command -v curl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires curl but it is not installed."; exit 1; }
 
-for id in `curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/2.0" \
+for id in `curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
  --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
  -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews \
   | perl -ne 's/\r\n//g;
@@ -29,7 +29,7 @@ do
 done
 if [[ -z "$URLS" ]]; then echoerr "Error: no qkview IDs recevied."; exit 1; fi
 
-curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/2.0" \
+curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
  --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
  -o - \
  $URLS \

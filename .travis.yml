@@ -1,0 +1,13 @@
+dist: xenial
+language: generic
+
+before_install:
+  - sudo apt-get install -y perl libxml-simple-perl
+  - openssl aes-256-cbc -K $encrypted_0321ff4314f5_key -iv $encrypted_0321ff4314f5_iv -in ./tests/cred.txt.enc -out ./tests/cred.txt -d
+
+
+before_script:
+  - ./tests/test_setup.sh
+
+script:
+  - ./tests/test_fileget.sh

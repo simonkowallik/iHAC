@@ -1,8 +1,8 @@
-#!/bin/bash
-#version:	2.0
+#!/usr/bin/env bash
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
+VERSION="2.1"
 #
 IHACAUTH="$HOME/.ihac/auth.jar"
 IHACPROXYFILE="$HOME/.ihac/IHACPROXY"
@@ -17,14 +17,14 @@ if [[ -n "$1" ]] && [[ "$1" =~ ^[0-9]+$ ]]
 then
   if [[ -n "$2" ]]
   then
-    curl $IHACPROXY --progress-bar -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/2.0" \
+    curl $IHACPROXY --progress-bar -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
      --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
      -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$1/files/qkview \
     > $2
     if [[ $? -eq 0 ]]; then echo "OK"; fi
   elif [[ ! -t 1 ]]
   then
-    curl $IHACPROXY --progress-bar -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/2.0" \
+    curl $IHACPROXY --progress-bar -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
      --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
      -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$1/files/qkview
   else

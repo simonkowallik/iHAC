@@ -1,8 +1,8 @@
-#!/bin/bash
-#version:	2.0
+#!/usr/bin/env bash
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
+VERSION="2.1"
 #
 IHACAUTH="$HOME/.ihac/auth.jar"
 IHACPROXYFILE="$HOME/.ihac/IHACPROXY"
@@ -13,25 +13,125 @@ function echoerr() { echo "$@" 1>&2; }
 
 command -v curl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires curl but it is not installed."; exit 1; }
 
-if [[ -n "$1" ]] && [[ "$1" =~ ^[0-9]+$ ]] && [[ -n "$2" ]]
-then
+function get_fileid() {
+  file=$1
   echo test | base64 -w0 > /dev/null 2>&1
   if [[ $? -eq 0 ]]
   then
-    fileid=`echo -n ${2#/} | base64 -w0`
+    fileid=$(echo -n ${file#/} | base64 -w0)
+    echo ${fileid//=/}
   else
-	fileid=`echo -n ${2#/} | base64 -b0`
+	  fileid=$(echo -n ${file#/} | base64 -b0)
+    echo ${fileid//=/}
   fi
-  curl -s$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/2.0" \
-   --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
-   -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$1/files/${fileid//=/}
-else
-  if [[ -n "$1" ]] && [[ $1 =~ ^[0-9]+$ ]]
+}
+
+if [[ "$1" =~ ^[0-9]+$ ]]
+then
+  # qkviewid
+  qkviewid=$1
+  if [[ -n "$2" ]]
   then
-	echoerr "Error: no qkview ID specified or not valid."
+    file=$2
   else
     echoerr "Error: no file specified."
+    exit 1
   fi
-  echoerr "Use: `basename $0` ID /path/file"
+elif [[ "$1" == "--output-directory" ]] || [[ "$1" == "-o" ]]
+then
+  #output directory mode
+  if [[ -d "$2" ]]
+  then
+    outdir=$2
+  else
+    echoerr "Error: output directory '$2' does not exist."
+    exit 1
+  fi
+  if [[ "$3" =~ ^[0-9]+$ ]]
+  then
+    # qkviewid
+    qkviewid=$3
+  else
+  	echoerr "Error: no qkview ID specified or not valid."
+    exit 1
+  fi
+else
+  echo "Usage:"
+  echo "`basename $0` ID /path/file"
+  echo "`basename $0` [--output-directory|-o] DIR ID /path/file [/path/file2] ..."
   exit 1
+fi
+
+if [[ -n "$outdir" ]]
+then
+  # outdir mode: ihac-fileget --output-dir|-o DIR QKVIEWID FILE1 [FILE2] [FILEn]
+
+  # generate list of files to download
+  files=()
+  argArray=( "$@" )
+  echo $@ | grep '*' >/dev/null 2>&1
+  if [[ $? -eq "0" ]];
+  then
+    # pattern mode
+    # get list of all files in the qkview
+    qkviewfiles=()
+    while IFS= read -r qkfile; do
+        qkviewfiles+=( "$qkfile" )
+    done < <( curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+       --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
+       -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$qkviewid/files \
+      | perl -ne 's/\r\n//g;
+    	if(m|http/1.. 200|gi) {$ok=1} else {
+    	if(m|http/1.. 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+    	if(m|http/1.. 404|gi)  {print STDERR "Error: no file list received, qkview ID might not exist.\n";exit 1}
+    	} if($ok && m/<\?xml/gi) {foreach(split /></) {if(m|file.+>(.+)</file|gi) {print "$1\n"}} exit 0}' )
+
+    # extract patterns from argument list, add others to files array
+    filePatterns=()
+    for ((i=3; $i<$#; i++))
+    do
+      echo "${argArray[$i]}" | grep '*' >/dev/null 2>&1
+      if [[ $? -eq "0" ]];
+      then
+        filePatterns=("${filePatterns[@]}" "${argArray[$i]}")
+      else
+        files=("${files[@]}" "${argArray[$i]}")
+      fi
+    done
+    # loop through qkview files and check if any of the filepattern match
+    for qkfileEntry in "${qkviewfiles[@]}"
+    do
+      for filePattern in ${filePatterns[@]}
+      do
+        if [[ $qkfileEntry == $filePattern ]]
+        then
+          # qkfileEntry matches filePattern, add it to files
+          files=("${files[@]}" "$qkfileEntry")
+        fi
+      done
+    done
+  else
+    # no pattern in arguments, simply add list to files array
+    for ((i=3; $i<$#; i++))
+    do
+      files=("${files[@]}" "${argArray[$i]}")
+    done
+  fi
+
+  # download files
+  for file in "${files[@]}"
+  do
+    mkdir -p "$(dirname ${outdir}${file})"
+    fileid=$(get_fileid $file)
+    curl -s$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+     --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
+     -o "${outdir}${file}" \
+     https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$qkviewid/files/$fileid
+  done
+else
+  # simple mode: ihac-fileget QKVIEWID FILE
+  fileid=$(get_fileid $file)
+  curl -s$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+   --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" \
+   -o - https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/$qkviewid/files/$fileid
 fi

@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.com/simonkowallik/iHAC.svg?branch=master)](https://travis-ci.com/simonkowallik/iHAC.svg?branch=master)
 # About
 The iHAC (iHealth API Clients) script collection aims to be a simple and easy to use interface to a subset of features provided by [F5 iHealth](https://ihealth.f5.com).
 It uses the [iHealth API](https://devcentral.f5.com/wiki/iHealth.HomePage.ashx) which is documented on [F5 DevCentral](https://devcentral.f5.com).
@@ -201,6 +202,16 @@ ltm default-node-monitor {
 ltm node /Common/10.0.0.10 {
     address 10.0.0.10
 }
+```
+
+fetching multiple files (supports wildcards) and placing them in a directory
+```sh
+simon@bigip ~ $ ihac-fileget 2254055 --output-directory ./qkview/ /config/bigip*.conf /PLATFORM
+simon@bigip ~ $ find ./qkview/ -type f
+./qkview/config/bigip_user.conf
+./qkview/config/bigip_base.conf
+./qkview/config/bigip.conf
+./qkview/PLATFORM
 ```
 
 ### ihac-commandlist

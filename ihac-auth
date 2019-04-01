@@ -2,7 +2,7 @@
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
-VERSION="2.1"
+VERSION="3.0"
 #
 IHACAUTH="$HOME/.ihac/auth.jar"
 if [[ ! -d "$HOME/.ihac" ]]; then mkdir "$HOME/.ihac"; fi

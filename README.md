@@ -275,6 +275,12 @@ simon@bigip ~ $ ihac-diagnostics 2254055 | egrep -A3 "MEDIUM|^(P|H)"
 simon@bigip ~ $ ihac-diagnostics 2254055 | egrep -A3 "HIGH|MEDIUM|^(P|H)"
 ```
 
+Output JSON or XML for further processing
+```sh
+simon@bigip ~ $ ihac-diagnostics --json 2254055 | jq .
+simon@bigip ~ $ ihac-diagnostics --xml 2254055 | xq
+```
+
 # Proxy Support
 Specify environment variable before executing an ihac script
 ```sh

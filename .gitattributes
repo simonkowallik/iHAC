@@ -22,7 +22,6 @@
 *.RTF	 diff=astextplain
 
 /README.md export-ignore
-/LICENSE
 /tests export-ignore
 /.travis.yml export-ignore
 /.gitattributes export-ignore

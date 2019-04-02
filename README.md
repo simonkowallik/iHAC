@@ -1,5 +1,9 @@
-[![Build Status](https://travis-ci.com/simonkowallik/iHAC.svg?branch=master)](https://travis-ci.com/simonkowallik/iHAC.svg?branch=master)
-# About
+# iHAC
+[![Travis Build Status](https://img.shields.io/travis/com/simonkowallik/iHAC/master.svg?label=travis%20build)](https://travis-ci.com/simonkowallik/iHAC)
+[![Releases](https://img.shields.io/github/release/simonkowallik/iHAC.svg)](https://github.com/simonkowallik/iHAC/releases)
+[![Commits since latest release](https://img.shields.io/github/commits-since/simonkowallik/iHAC/latest.svg)](https://github.com/simonkowallik/iHAC/commits)
+[![Latest Release](https://img.shields.io/github/release-date/simonkowallik/iHAC.svg?color=blue)](https://github.com/simonkowallik/iHAC/releases/latest)
+## About
 The iHAC (iHealth API Clients) script collection aims to be a simple and easy to use interface to a subset of features provided by [F5 iHealth](https://ihealth.f5.com).
 It uses the [iHealth API](https://devcentral.f5.com/wiki/iHealth.HomePage.ashx) which is documented on [F5 DevCentral](https://devcentral.f5.com).
 
@@ -14,7 +18,7 @@ It uses the [iHealth API](https://devcentral.f5.com/wiki/iHealth.HomePage.ashx) 
 * Run commands
 * Show diagnostics
 
-# Installation
+## Installation
 ### 1. Install prerequisites
 This is the list of prerequisites:
 * coreutils (tested with: 5.97, 8.15)
@@ -84,10 +88,7 @@ If you need a proxy, use curls proxy option ```-x http://192.0.2.245:8080```.
 ### 3. Run
 Have fun. :)
 
-# License
-[MIT](http://opensource.org/licenses/MIT)
-
-# Usage
+## Usage
 
 ### ihac-auth
 Interactive authentication
@@ -281,7 +282,7 @@ simon@bigip ~ $ ihac-diagnostics --json 2254055 | jq .
 simon@bigip ~ $ ihac-diagnostics --xml 2254055 | xq
 ```
 
-# Proxy Support
+## Proxy Support
 Specify environment variable before executing an ihac script
 ```sh
 simon@bigip ~ $ IHACPROXY=http://localhost:8080 ihac-*
@@ -301,7 +302,7 @@ simon@bigip ~ $ ihac-*
 
 Note: Environment variable will always have precedence
 
-# Security
+## Security
 ### Transport Security
 cURL command line client is used to interact with iHealth. Transport security depends on cURL, which includes encryption and authenticity verification.
 
@@ -330,7 +331,7 @@ simon@bigip ~ $ file $HOME/.ihac/auth.jar
 simon@bigip ~ $ rm -f $HOME/.ihac/auth.jar
 ```
 
-# Usage Examples
+## Usage Examples
 Pipe credentials from local to remote system for authentication and list all qkviews available on iHealth
 ```sh
 ~ $ cat $HOME/auth.txt | ssh root@192.168.1.245 '/root/bin/ihac-auth;/root/bin/ihac-qkviewlist'

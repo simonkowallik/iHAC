@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/simonkowallik/iHAC.svg?branch=master)](https://travis-ci.com/simonkowallik/iHAC.svg?branch=master)
+[![Build Status](https://travis-ci.com/simonkowallik/iHAC.svg?branch=master)](https://travis-ci.com/simonkowallik/iHAC)
 # About
 The iHAC (iHealth API Clients) script collection aims to be a simple and easy to use interface to a subset of features provided by [F5 iHealth](https://ihealth.f5.com).
 It uses the [iHealth API](https://devcentral.f5.com/wiki/iHealth.HomePage.ashx) which is documented on [F5 DevCentral](https://devcentral.f5.com).

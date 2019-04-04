@@ -18,6 +18,11 @@ It uses the [iHealth API](https://devcentral.f5.com/wiki/iHealth.HomePage.ashx) 
 * Run commands
 * Show diagnostics
 
+#### Demo!
+<p align="center">
+    <img src="https://simonkowallik.github.io/iHAC/demo.svg">
+</p>
+
 ## Installation
 ### 1. Install prerequisites
 This is the list of prerequisites:

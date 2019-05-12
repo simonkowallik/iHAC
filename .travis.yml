@@ -12,3 +12,6 @@ script:
   - ./tests/test_fileget.sh
   - ./tests/test_diagnostics.sh
   - ./tests/test_qkviewdelete.sh
+  - ./tests/test_fileget_bigiq.sh
+  - ./tests/test_diagnostics_bigiq.sh
+  - ./tests/test_qkviewdelete_bigiq.sh

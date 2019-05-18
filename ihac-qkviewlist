@@ -36,6 +36,7 @@ curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent 
  | perl -ne 's/\r\n//g;
     if(m|http/1.. 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
     if(!m|http/1.. (404)|gi && m|http/1.. (40\d)|gi) {print STDERR "Error: received $1 from server.\n";exit 1}
+    my ($serial, $hostname, $case, $date, $id) = ();
     if(m|<chassis_serial>(.*)</chassis_serial>|gi) {$serial=$1}
     if(m|<hostname>(.*)</hostname>|gi) {$hostname=$1}
     if(m|<f5_support_case>(.*)</f5_support_case>|gi) {$case=$1}

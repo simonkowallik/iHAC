@@ -104,18 +104,18 @@ Password:
 OK
 ```
 
-Urlencoded credentials as an argument
+JSON formatted credentials as an argument
 ```sh
-simon@bigip ~ $ ihac-auth 'userid=simon%40example.com&passwd=MyP%40ssw0rd'
+simon@bigip ~ $ ihac-auth '{"user_id": "simon@example.com", "user_secret": "MyP@ssw0rd"}'
 OK
 ```
 
-Urlencoded credentials via STDIN
+JSON formatted credentials via STDIN
 ```sh
-simon@bigip ~ $ cat $HOME/credentials.txt | ihac-auth
+simon@bigip ~ $ cat $HOME/credentials.json | ihac-auth
 
-simon@bigip ~ $ cat $HOME/credentials.txt
-userid=simon%40example.com&passwd=MyP%40ssw0rd
+simon@bigip ~ $ cat $HOME/credentials.json
+{"user_id": "simon@example.com", "user_secret": "MyP@ssw0rd"}
 ```
 
 De-authenticate / delete session cookies

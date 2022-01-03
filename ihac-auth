@@ -2,7 +2,7 @@
 #license:	MIT
 #author:	Simon Kowallik <github simonkowallik.com>
 #source:	https://github.com/simonkowallik/iHAC
-VERSION="3.1"
+VERSION="3.2"
 #
 IHACAUTH="$HOME/.ihac/auth.jar"
 if [[ ! -d "$HOME/.ihac" ]]; then mkdir "$HOME/.ihac"; fi
@@ -36,7 +36,7 @@ then
   echo -n "Password: "
   read -s password && echo
   if [[ -z "$password" ]]; then echoerr "Error: need password to authenticate."; exit 1; fi
-  USRPW="userid=$(urlencode $username)&passwd=$(urlencode $password)"
+  USRPW="{\"user_id\": \"$username\", \"user_secret\": \"$password\"}"
 else
   if [[ "$1" == "delete" ]] || [[ "$1" == "--delete" ]] || [[ "$1" == "-d" ]] || [[ "$1" == "--logout" ]]
   then
@@ -60,12 +60,13 @@ else
 fi
 
 result=`curl -si$IHACPROXY --user-agent "iHAC/$VERSION" --cookie-jar "$IHACAUTH" \
- --data $USRPW \
- -o - https://login.f5.com/resource/loginAction.jsp \
+ -H "Content-type: application/json" \
+ --data-ascii "$USRPW" \
+ -o - https://api.f5.com/auth/pub/sso/login/ihealth-api \
  | sort -r \
  | perl -ne 's/\r\n//g;
-	if(m/ssosession/gi) {print "OK";exit 0}
-	if(m/login.jsp/gi)  {print "auth_failed";exit 0}'`
+        if(m/ssosession/gi) {print "OK";exit 0}
+        if(m/login.jsp/gi)  {print "auth_failed";exit 0}'`
 
 if [[ "$result" == "OK" ]]; then echo "OK"; exit 0; fi
 if [[ "$result" == "auth_failed" ]]; then echoerr "Error: authentication failed."; exit 1; fi

@@ -1,5 +1,5 @@
 # iHAC
-[![Travis Build Status](https://img.shields.io/travis/com/simonkowallik/iHAC/master.svg?label=travis%20build)](https://travis-ci.com/simonkowallik/iHAC)
+[![ci-tests](https://github.com/simonkowallik/iHAC/actions/workflows/main.yml/badge.svg)](https://github.com/simonkowallik/iHAC/actions/workflows/main.yml)
 [![Releases](https://img.shields.io/github/release/simonkowallik/iHAC.svg)](https://github.com/simonkowallik/iHAC/releases)
 [![Commits since latest release](https://img.shields.io/github/commits-since/simonkowallik/iHAC/latest.svg)](https://github.com/simonkowallik/iHAC/commits)
 [![Latest Release](https://img.shields.io/github/release-date/simonkowallik/iHAC.svg?color=blue)](https://github.com/simonkowallik/iHAC/releases/latest)
@@ -49,7 +49,7 @@ Cygwin: Install ```curl``` and ```perl-XML-Simple``` through the Cygwin Setup
 simon@bigip ~ $ INSTALLDIR=$HOME/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
 	CURL_CA_BUNDLE=/config/ssl/ssl.crt/ca-bundle.crt \
-	curl -L https://github.com/simonkowallik/iHAC/tarball/master \
+	curl -L https://github.com/simonkowallik/iHAC/tarball/main \
 	| tar xzv --strip-components 1 --wildcards -C $INSTALLDIR */ihac*; \
 	chmod a+x $INSTALLDIR/ihac-*
 ```
@@ -64,7 +64,7 @@ If you want to receive updates when running `brew update` add my tap with `brew 
 ```sh
 simon@macos ~ $ sudo sh -c 'INSTALLDIR=/usr/local/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
-	curl -L https://github.com/simonkowallik/iHAC/tarball/master \
+	curl -L https://github.com/simonkowallik/iHAC/tarball/main \
 	| tar xzv --strip-components 1 -C $INSTALLDIR */ihac*; \
 	chmod a+x $INSTALLDIR/ihac-*'
 ```
@@ -73,7 +73,7 @@ simon@macos ~ $ sudo sh -c 'INSTALLDIR=/usr/local/bin; \
 ```sh
 simon@other ~ $ INSTALLDIR=/usr/local/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
-	curl -L https://github.com/simonkowallik/iHAC/tarball/master \
+	curl -L https://github.com/simonkowallik/iHAC/tarball/main \
 	| tar xzv --strip-components 1 --wildcards -C $INSTALLDIR */ihac*; \
 	chmod a+x $INSTALLDIR/ihac-*
 ```
@@ -81,7 +81,7 @@ Adjust ```INSTALLDIR``` to your needs. ```/usr/local/bin``` is mounted as read-o
 
 If you just want to get the tarball:
 ```sh
-simon@bigip ~ $ curl -L https://github.com/simonkowallik/iHAC/tarball/master -o $HOME/ihac.tgz
+simon@bigip ~ $ curl -L https://github.com/simonkowallik/iHAC/tarball/main -o $HOME/ihac.tgz
 ```
 
 If the CA chain validation for github.com fails on your system, you might try the following:

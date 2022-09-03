@@ -8,4 +8,4 @@ set -ev
 [[ "$(./ihac-auth '{"invalid": json}' 2>&1)" == "Error: Unknown error occurred." ]] || exit 1
 
 # authenticate to ihealth
-[[ "$(./ihac-auth $GH_ACTIONS_IHAC_CREDENTIALS)" == "OK" ]] || exit 1
+[[ "$(./ihac-auth "$GH_ACTIONS_IHAC_CREDENTIALS")" == "OK" ]] || exit 1

@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 set -ev
 
-# authenticate to ihealth
-[[ "$(cat ./tests/cred.txt | ./ihac-auth)" == "OK" ]] || exit 1
-
 # upload working qkview
 qkviewid=$(./ihac-qkviewadd ./tests/qkview.tgz | egrep -o '([0-9]+)')
 echo "$qkviewid" > ./qkviewid

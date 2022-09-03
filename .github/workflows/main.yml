@@ -1,0 +1,21 @@
+name: iHAC ci-tests
+
+on:
+  push:
+
+jobs:
+  test-on-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: first
+        run: uname -a
+      - name: second
+        run: pwd
+      - name: checkout git repo
+        uses: actions/checkout@v2 
+      - name: fourth
+        run: ls -la
+      - name: fifth
+        run: env
+      - name: sixth
+        run: id

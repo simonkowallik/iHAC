@@ -14,17 +14,6 @@ if [[ -f "$IHACPROXYFILE" ]]; then IHACPROXY="$(<$IHACPROXYFILE)"; fi
 if [[ ! -z "$IHACPROXY" ]]; then IHACPROXY="x $IHACPROXY"; fi
 
 function echoerr() { echo "$@" 1>&2; }
-function urlencode() {
-  local length="${#1}"
-  for (( i = 0; i < length; i++ )); do
-    local c="${1:i:1}"
-    case $c in
-      [a-zA-Z0-9.~_-]) printf "$c" ;;
-      ' ') printf + ;;
-      *) printf '%%%X' "'$c"
-    esac
-  done
-}
 
 command -v curl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires curl but it is not installed."; exit 1; }
 

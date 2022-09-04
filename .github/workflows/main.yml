@@ -2,6 +2,9 @@ name: ci-tests
 
 on:
   push:
+  schedule:
+    - cron: '39 9 * * 4'
+
 
 jobs:
   test-on-ubuntu:

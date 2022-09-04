@@ -1,0 +1,35 @@
+name: ci-tests
+
+on:
+  push:
+  schedule:
+    - cron: '39 9 * * 4'
+
+
+jobs:
+  test-on-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: install requirements
+        run: sudo apt install -y perl libxml-simple-perl libxml2-utils
+      - name: checkout git repo
+        uses: actions/checkout@v2 
+      - name: login
+        env:
+          GH_ACTIONS_IHAC_CREDENTIALS: ${{ secrets.GH_ACTIONS_IHAC_CREDENTIALS }}
+        run: ./tests/test_login.sh
+      - name: setup tests
+        run: ./tests/test_setup.sh
+      - name: fileget
+        run: ./tests/test_fileget.sh
+      - name: diagnostics
+        run: ./tests/test_diagnostics.sh
+      - name: qkviewdelete
+        run: ./tests/test_qkviewdelete.sh
+      # bigiq
+      - name: fileget bigiq
+        run: ./tests/test_fileget_bigiq.sh
+      - name: diagnostics bigiq
+        run: ./tests/test_diagnostics_bigiq.sh
+      - name: qkviewdelete bigiq
+        run: ./tests/test_qkviewdelete_bigiq.sh

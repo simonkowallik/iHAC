@@ -482,14 +482,6 @@ then
 elif [[ "$module" == "qkviewmetadata" ]];
 then
     echo "TODO: https://clouddocs.f5.com/api/ihealth/QKView_Metadata.html"
-    echo curl -H"Accept: application/vnd.f5.ihealth.api" \
-    --user-agent "MyGreatiHealthClient" \
-    --cookie cookiefile \
-    --cookie-jar cookiefile \
-    -o  \
-    —data ‘visible_in_gui=true&description=this%20is%20my%20description’ \
-    https://ihealth-api.f5.com/qkview-analyzer/api/qkviews/<qkview_id>
-
 else
     echoerr "Error: cannot determine iHAC module, valid modules are: $IHAC_MODULES"
     exit 1

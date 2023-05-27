@@ -4,6 +4,7 @@ on:
   push:
   schedule:
     - cron: '39 9 * * 4'
+  workflow_dispatch:
 
 jobs:
   test-on-ubuntu:
@@ -29,8 +30,8 @@ jobs:
         run: ./tests/test_filelist.sh
       - name: commandlist
         run: ./tests/test_commandlist.sh
-      - name: commandget
-        run: ./tests/test_commandget.sh
+      - name: commandrun
+        run: ./tests/test_commandrun.sh
       - name: diagnostics
         run: ./tests/test_diagnostics.sh
       - name: qkviewmetadata

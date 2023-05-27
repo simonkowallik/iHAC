@@ -1,0 +1,661 @@
+#!/usr/bin/env bash
+IHAC_LICENSE="MIT"
+IHAC_AUTHOR="Simon Kowallik <github simonkowallik.com>"
+IHAC_SITE="https://github.com/simonkowallik/iHAC"
+
+VERSION="4.0"
+
+IHACHOME="${IHACHOME:=$HOME/.ihac}"
+IHACAUTH="$IHACHOME/auth.jar"
+IHACAUTHTOKEN="$IHACHOME/auth_token.txt"
+IHACPROXYFILE="$IHACHOME/IHACPROXY"
+if [[ -f "$IHACPROXYFILE" ]]; then IHACPROXY="$(<$IHACPROXYFILE)"; fi
+if [[ ! -z "$IHACPROXY" ]]; then IHACPROXY="x $IHACPROXY"; fi
+
+# check general requirements
+command -v curl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires curl but it is not installed."; exit 1; }
+command -v perl >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires perl but it is not installed."; exit 1; }
+command -v grep >/dev/null 2>&1 || { echoerr "Error: $(basename $0) requires grep but it is not installed."; exit 1; }
+
+IHAC_MODULES="auth authV1 commandlist commandrun diagnostics fileget filelist qkviewadd qkviewdelete qkviewget qkviewlist qkviewmetadata"
+
+# functions
+function echoerr() { echo "$@" 1>&2; }
+function determine_module() {
+    program_name=${1##ihac-}
+    contains() { printf "%s\n" $1 | grep '^'"$2"'$' >/dev/null; }
+    contains "$IHAC_MODULES -h --help -help help" "$program_name"
+    if [[ $? -eq 0 ]];
+    then
+        echo "$program_name"
+    fi
+}
+function b64encode() {
+  command -v base64 >/dev/null 2>&1 && echo -n $(echo -n $1 | base64 -w0) && return 0
+  command -v basenc >/dev/null 2>&1 && echo -n $(echo -n $1 | basenc --base64 -w0) && return 0
+  echo -n $1 | perl -MMIME::Base64 -e 'undef $/;while(<>){$b64 = encode_base64($_); $b64 =~ s/\n//g; print $b64}' && return 0
+}
+function sha1() {
+  command -v sha1sum > /dev/null 2>&1 && res=$(echo -n $1 | sha1sum) && echo -n ${res:0:40} && return 0
+  command -v shasum > /dev/null 2>&1 && res=$(echo -n $1 | shasum) && echo -n ${res:0:40} && return 0
+  command -v openssl > /dev/null 2>&1 && res=$(echo -n $1 | openssl sha1) && echo -n ${res:9:48} && return 0
+}
+
+# determine module
+module=$(determine_module "$(basename $0)")
+if [[ -z "$module" ]];
+then
+    module=$(determine_module "$(basename $0)-$1")
+    shift
+fi
+
+# ihealth2: K000132249
+if [[ -s "$IHACAUTHTOKEN" ]]; then
+  IHEALTH2_AUTH_OPTION="-H"
+  IHEALTH2_AUTH_VALUE="Authorization: Bearer $(<$IHACAUTHTOKEN)"
+  IHEALTH_API_HOST="ihealth2-api.f5.com"
+else
+  IHEALTH_API_HOST="ihealth-api.f5.com"
+fi
+
+# execute module specific script code
+if [[ "$module" == "auth" ]];
+then
+    if [[ ! -d "$IHACHOME" ]]; then mkdir "$IHACHOME"; fi
+    if [[ -f "$IHACAUTH" ]]; then rm -f "$IHACAUTH"; fi
+    if [[ -f "$IHACAUTHTOKEN" ]]; then rm -f "$IHACAUTHTOKEN"; fi
+    touch "$IHACAUTH"; chmod 0600 "$IHACAUTH";
+    touch "$IHACAUTHTOKEN"; chmod 0600 "$IHACAUTHTOKEN";
+    if [[ -z "$1" ]] && [[ -t 0 ]]
+    then
+      echo -n "Client ID: "
+      read client_id
+      if [[ -z "$client_id" ]]; then echoerr "Error: need client_id to authenticate."; exit 1; fi
+      echo -n "Client Secret: "
+      read -s client_secret && echo
+      if [[ -z "$client_secret" ]]; then echoerr "Error: need client_secret to authenticate."; exit 1; fi
+      CLIENT_AUTH=$(b64encode ${client_id}:${client_secret})
+    else
+      if [[ "$1" == "delete" ]] || [[ "$1" == "--delete" ]] || [[ "$1" == "-d" ]] || [[ "$1" == "--logout" ]]
+      then
+    	  if [[ -f "$IHACAUTH" ]]; then rm -f "$IHACAUTH"; fi
+    	  if [[ -f "$IHACAUTHTOKEN" ]]; then rm -f "$IHACAUTHTOKEN"; fi
+        echo "OK"
+    	  exit 0
+      elif [[ ! -z "$1" ]] && [[ -s "$1" ]]
+      then
+        CLIENT_AUTH=$(<$1)
+      elif [[ ! -z "$1" ]]
+      then
+        if [[ "$1" =~ ":" ]]
+        then
+          CLIENT_AUTH=$(b64encode $1)
+        else
+          CLIENT_AUTH=$1
+        fi
+      elif [[ ! -t 0 ]]
+      then
+        read CLIENT_AUTH
+    	  if [[ -z "$CLIENT_AUTH" ]]; then echoerr "Error: need client_id and client_secret to authenticate."; exit 1; fi
+      else
+    	  echoerr "Error: need client_id and client_secret to authenticate."
+    	  exit 1
+      fi
+    fi
+
+    result=`curl -si$IHACPROXY --request POST --user-agent "iHAC/$VERSION" \
+     -H "Authorization: Basic $CLIENT_AUTH" \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -H "Accept: application/json" \
+     -H "Cache-Control: no-cache" \
+     --data "grant_type=client_credentials&scope=ihealth" \
+     -o - https://identity.account.f5.com/oauth2/ausp95ykc80HOU7SQ357/v1/token \
+     | sort -r \
+     | perl -ne 's/\r\n//g;
+            if(m/token_type/g) {if(m/"access_token":\s*"([^"]+)"/) {print $1; exit 0;}}
+            if(m/"errorSummary":\s*"([^"]+)"/) {print "error response: $1"; exit 0;}
+            if(m/"error_description":\s*"([^"]+)"/) {print "error response: $1"; exit 0;}
+            '`
+    if [[ "$result" =~ "error" ]]; then echoerr "Error: authentication failed ($result)."; exit 1; fi
+    if [[ -z "$result" ]]; then echoerr "Error: Unknown error occurred."; exit 1; fi
+    echo -n $result > $IHACAUTHTOKEN;
+    echo "OK"; exit 0;
+elif [[ "$module" == "authV1" ]];
+then
+    if [[ ! -d "$IHACHOME" ]]; then mkdir "$IHACHOME"; fi
+    if [[ -f "$IHACAUTHTOKEN" ]]; then rm -f "$IHACAUTHTOKEN"; fi
+    if [[ -f "$IHACAUTH" ]]; then rm -f "$IHACAUTH"; fi
+    touch "$IHACAUTH"; chmod 0600 "$IHACAUTH";
+    if [[ -z "$1" ]] && [[ -t 0 ]]
+    then
+      echo -n "Username: "
+      read username
+      if [[ -z "$username" ]]; then echoerr "Error: need username to authenticate."; exit 1; fi
+      echo -n "Password: "
+      read -s password && echo
+      if [[ -z "$password" ]]; then echoerr "Error: need password to authenticate."; exit 1; fi
+      USRPW="{\"user_id\": \"$username\", \"user_secret\": \"$password\"}"
+    else
+      if [[ "$1" == "delete" ]] || [[ "$1" == "--delete" ]] || [[ "$1" == "-d" ]] || [[ "$1" == "--logout" ]]
+      then
+    	if [[ -f "$IHACAUTH" ]]; then rm -f "$IHACAUTH"; fi
+        echo "OK"
+    	exit 0
+      elif [[ ! -z "$1" ]] && [[ -s "$1" ]]
+      then
+        USRPW=$(<$1)
+      elif [[ ! -z "$1" ]]
+      then
+        USRPW=$1
+      elif [[ ! -t 0 ]]
+      then
+        read USRPW
+    	if [[ -z "$USRPW" ]]; then echoerr "Error: need credentials to authenticate."; exit 1; fi
+      else
+    	echoerr "Error: need credentials to authenticate."
+    	exit 1
+      fi
+    fi
+
+    result=`curl -si$IHACPROXY --user-agent "iHAC/$VERSION" --cookie-jar "$IHACAUTH" \
+     -H "Content-type: application/json" \
+     --data-ascii "$USRPW" \
+     -o - https://api.f5.com/auth/pub/sso/login/ihealth-api \
+     | sort -r \
+     | perl -ne 's/\r\n//g;
+            if(m/ssosession/gi) {print "OK";exit 0}
+            if(m/Login failed/gi)  {print "auth_failed";exit 0}'`
+
+    if [[ "$result" == "OK" ]]; then echo "OK"; exit 0; fi
+    if [[ "$result" == "auth_failed" ]]; then echoerr "Error: authentication failed."; exit 1; fi
+    if [[ -z "$result" ]]; then echoerr "Error: Unknown error occurred."; exit 1; fi
+elif [[ "$module" == "commandlist" ]];
+then
+    if [[ -n "$1" ]] && [[ "$1" =~ ^[0-9]+$ ]]
+    then
+      curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+       --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+       -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$1/commands \
+      | perl -ne 's/\r\n//g;
+    	if(m|http/... 200|gi) {$ok=1} else {
+    	if(m|http/... 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+    	if(m|http/... 401|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+    	if(m|http/... 404|gi)  {print STDERR "Error: no command list received, <qkviewID> might not exist.\n";exit 1}
+    	} if($ok && m/<\?xml/gi) {foreach(split /></) {if(m|command id=".+">(.+)</command|gi) {print "$1\n"}} exit 0}'
+    else
+      echoerr "Error: no <qkviewID> specified or not valid."
+      echoerr "Use: ihac commandlist <qkviewID>"
+      exit 1
+    fi
+elif [[ "$module" == "commandrun" ]];
+then
+    if [[ -n "$1" ]] && [[ "$1" =~ ^[0-9]+$ ]] && [[ -n "$2" ]]
+    then
+      cmdid=$(sha1 "$2")
+      curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+       --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+       -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$1/commands/${cmdid} \
+      | perl -MMIME::Base64 -ne 's/[\r\n]+//g;
+    	if(m|http/... 200|gi) {$ok=1} else {
+    	if(m|http/... 404|gi)  {print STDERR "Error: no command list received, <qkviewID> might not exist.\n";exit 1}
+    	if(m|http/... 401|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+    	if(m|http/... 500|gi)  {print STDERR "Error: received code 500 from server. Command might not exist.\n";exit 1}
+    	} if($ok && m/<\?xml/gi) {foreach(split /></) {if(m|output>(.+)</output|gi) {print decode_base64($1)}} exit 0}'
+    else
+      if [[ -n "$1" ]] && [[ $1 =~ ^[0-9]+$ ]]
+      then
+    	echoerr "Error: no <qkviewID> specified or not valid."
+      else
+        echoerr "Error: no command specified."
+      fi
+      echoerr "Use: ihac commandrun <qkviewID> 'command'"
+      exit 1
+    fi
+elif [[ "$module" == "diagnostics" ]];
+then
+    if [[ -n "$1" ]] && [[ "$1" == "--json" ]] && [[ "$2" =~ ^[0-9]+$ ]]
+    then
+      qkviewid="$2"
+      curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0+json" --user-agent "iHAC/$VERSION" \
+       --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+       -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$qkviewid/diagnostics?set=all \
+       | perl -e '
+        my $json;
+        while (<STDIN>) {
+            s/\r\n//g; s/\n//g; s/\r//g; s/\t/ /g;
+            if(m|http/... 200|gi) {$response=1} else {
+                if(m|http/... 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+                if(m|http/... 404|gi)  {print STDERR "Error: <qkviewID> not found.\n";exit 1}
+                if(m|http/... 401|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+            }
+            if($response && m/^\{/g) {$json_response=1}
+            if($json_response) {$json .= $_}
+        }
+        print $json;
+        exit 0;
+      '
+    elif [[ -n "$1" ]] && [[ "$1" == "--xml" ]] && [[ "$2" =~ ^[0-9]+$ ]]
+    then
+      qkviewid="$2"
+      curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0+xml" --user-agent "iHAC/$VERSION" \
+       --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+       -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$qkviewid/diagnostics?set=all \
+      | perl -e '
+        my $xmldata;
+        while (<STDIN>) {
+            s/\r\n//g; s/\n//g; s/\r//g; s/\t/ /g;
+            if(m|http/... 200|gi) {$response=1} else {
+                if(m|http/... 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+                if(m|http/... 404|gi)  {print STDERR "Error: <qkviewID> not found.\n";exit 1}
+                if(m|http/... 401|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+            }
+            if($response && m/<\?xml/gi) {$xml_response=1}
+            if($xml_response) {$xmldata .= $_}
+        }
+        print $xmldata;
+        exit 0;
+      ' && exit 0
+    elif [[ -n "$1" ]] && [[ "$1" =~ ^[0-9]+$ ]]
+    then
+      curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0+xml" --user-agent "iHAC/$VERSION" \
+       --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+       -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$1/diagnostics?set=all \
+      | perl -e '
+        my $xmldata;
+        while (<STDIN>) {
+            s/\r\n//g; s/\n//g; s/\r//g; s/\t/ /g;
+            if(m|http/... 200|gi) {$response=1} else {
+                if(m|http/... 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+                if(m|http/... 404|gi)  {print STDERR "Error: <qkviewID> not found.\n";exit 1}
+                if(m|http/... 401|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+            }
+            if($response && m/<\?xml/gi) {$xml_response=1}
+            if($xml_response) {$xmldata .= $_}
+        }
+        eval {require XML::Simple};
+        if ($@) {print STDERR "Error: ihac diagnostics requires perl module XML::Simple but it is not installed. Perl error: $@\n";exit 1}
+        eval {$xml = new XML::Simple->XMLin($xmldata)};
+        if ($@) {print STDERR "Error: Could not parse XML: $@\n";exit 1}
+        $hs_ver = $xml->{version}; $hs_sys = $xml->{system_information};
+        print "Hostname: $hs_sys->{hostname}\t Serial: $hs_sys->{bigip_chassis_serial_num}\n";
+        print "Version: $hs_ver->{version} $hs_ver->{edition}\t Platform: $hs_sys->{platform}\n\n";
+        $diag = $xml->{diagnostics}->{diagnostic};
+        foreach $hs ( sort { reverse($diag->{$a}->{run_data}->{h_importance}) cmp reverse($diag->{$b}->{run_data}->{h_importance}) } keys %{$diag} ) {
+            next if($diag->{$hs}->{run_data}->{match} eq "false");
+            $hs_r = $diag->{$hs}->{results};
+            my @hs_s;
+            foreach my $key (keys %{$hs_r->{h_sols}->{solution}}) {
+              if ($key eq "content") {push(@hs_s, $hs_r->{h_sols}->{solution}->{content});}
+              elsif ($key =~ /^K.*/) {push(@hs_s, $hs_r->{h_sols}->{solution}->{$key}->{content});}
+            }
+            $hs_s = $hs_r->{h_sols}->{solution}->{content};
+            print "* Severity: $diag->{$hs}->{run_data}->{h_importance} \tHeuristic: $hs_r->{h_name}\n";
+            print "* Title:\t$hs_r->{h_header}\n";
+            print "* Summary:\t$hs_r->{h_summary}\n";
+            print "* SOLs:\t\t"; print join(", ", @hs_s);
+            print "\n\n";
+        }
+        exit 0;
+      ' && exit 0
+    else
+      echoerr "Error: no <qkviewID> specified or not valid."
+      echoerr "Usage: ihac diagnostics [--json|--xml] <qkviewID>"
+      exit 1
+    fi
+elif [[ "$module" == "fileget" ]];
+then
+    function get_fileid() {
+      file=$1
+      echo test | base64 -w0 > /dev/null 2>&1
+      if [[ $? -eq 0 ]]
+      then
+        fileid=$(echo -n ${file#/} | base64 -w0)
+        echo ${fileid//=/}
+      else
+    	  fileid=$(echo -n ${file#/} | base64 -b0)
+        echo ${fileid//=/}
+      fi
+    }
+
+    if [[ "$1" =~ ^[0-9]+$ ]]
+    then
+      # qkviewid
+      qkviewid=$1
+      if [[ -n "$2" ]]
+      then
+        file=$2
+      else
+        echoerr "Error: no file specified."
+        exit 1
+      fi
+    elif [[ "$1" == "--output-directory" ]] || [[ "$1" == "-o" ]]
+    then
+      #output directory mode
+      if [[ -d "$2" ]]
+      then
+        outdir=$2
+      else
+        echoerr "Error: output directory '$2' does not exist."
+        exit 1
+      fi
+      if [[ "$3" =~ ^[0-9]+$ ]]
+      then
+        # qkviewid
+        qkviewid=$3
+      else
+      	echoerr "Error: no <qkviewID> specified or not valid."
+        exit 1
+      fi
+    else
+      echo "Usage:"
+      echo "ihac fileget <qkviewID> /path/file"
+      echo "ihac fileget [--output-directory|-o] DIR <qkviewID> /path/file [/path/file2]"
+      exit 1
+    fi
+
+    if [[ -n "$outdir" ]]
+    then
+      # outdir mode: ihac-fileget --output-dir|-o DIR QKVIEWID FILE1 [FILE2] [FILEn]
+
+      # generate list of files to download
+      files=()
+      argArray=( "$@" )
+      echo $@ | grep '*' >/dev/null 2>&1
+      if [[ $? -eq "0" ]];
+      then
+        # pattern mode
+        # get list of all files in the qkview
+        qkviewfiles=()
+        while IFS= read -r qkfile; do
+            qkviewfiles+=( "$qkfile" )
+        done < <( curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+           --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+           -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$qkviewid/files \
+          | perl -ne 's/\r\n//g;
+        	if(m|http/... 200|gi) {$ok=1} else {
+        	if(m|http/... 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+        	if(m|http/... 404|gi)  {print STDERR "Error: no file list received, <qkviewID> might not exist.\n";exit 1}
+        	if(m|http/... 401|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+        	} if($ok && m/<\?xml/gi) {foreach(split /></) {if(m|file.+>(.+)</file|gi) {print "$1\n"}} exit 0}' )
+
+        # extract patterns from argument list, add others to files array
+        filePatterns=()
+        for ((i=3; $i<$#; i++))
+        do
+          echo "${argArray[$i]}" | grep '*' >/dev/null 2>&1
+          if [[ $? -eq "0" ]];
+          then
+            filePatterns=("${filePatterns[@]}" "${argArray[$i]}")
+          else
+            files=("${files[@]}" "${argArray[$i]}")
+          fi
+        done
+        # loop through qkview files and check if any of the filepattern match
+        for qkfileEntry in "${qkviewfiles[@]}"
+        do
+          for filePattern in ${filePatterns[@]}
+          do
+            if [[ $qkfileEntry == $filePattern ]]
+            then
+              # qkfileEntry matches filePattern, add it to files
+              files=("${files[@]}" "$qkfileEntry")
+            fi
+          done
+        done
+      else
+        # no pattern in arguments, simply add list to files array
+        for ((i=3; $i<$#; i++))
+        do
+          files=("${files[@]}" "${argArray[$i]}")
+        done
+      fi
+
+      # download files
+      for file in "${files[@]}"
+      do
+        mkdir -p "$(dirname ${outdir}${file})"
+        fileid=$(get_fileid $file)
+        curl -s$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+         --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+         -o "${outdir}${file}" \
+         https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$qkviewid/files/$fileid
+      done
+    else
+      # simple mode: ihac-fileget QKVIEWID FILE
+      fileid=$(get_fileid $file)
+      curl -s$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+       --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+       -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$qkviewid/files/$fileid
+    fi
+elif [[ "$module" == "filelist" ]];
+then
+    if [[ -n "$1" ]] && [[ "$1" =~ ^[0-9]+$ ]]
+    then
+      curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+       --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+       -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$1/files \
+      | perl -ne 's/\r\n//g;
+    	if(m|http/... 200|gi) {$ok=1} else {
+    	if(m|http/... 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+    	if(m|http/... 404|gi)  {print STDERR "Error: no file list received, <qkviewID> might not exist.\n";exit 1}
+    	if(m|http/... 401|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+    	} if($ok && m/<\?xml/gi) {foreach(split /></) {if(m|file.+>(.+)</file|gi) {print "$1\n"}} exit 0}'
+    else
+      echoerr "Error: no <qkviewID> specified or not valid."
+      echoerr "Use: ihac filelist <qkviewID>"
+      exit 1
+    fi
+elif [[ "$module" == "qkviewadd" ]];
+then
+    if [[ "$#" -gt 0 ]]
+    then
+      QKVIEWS=("$@")
+    elif [[ ! -t 0 ]]
+    then
+      QKVIEWS="-"
+    else	
+      echoerr "Error: no file specified"
+      echoerr "Use: ihac qkviewadd /path/file [/path/fileN]"
+      echoerr "Use: cat /path/file | ihac qkviewadd"
+      exit 1
+    fi
+
+    for QKVIEW in "${QKVIEWS[@]}"; do
+    if [[ -f "$QKVIEW" ]] || [[ "$QKVIEW" == "-" ]]; then
+    curl --progress-bar -i$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+     --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+     -F "qkview=@$QKVIEW" -F 'visible_in_gui=True' \
+     -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews \
+     | perl -ne 's/\r\n//g;
+     	if(m|http/... 303|gi) {$ok=1} else {
+     	if(m|http/... 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+     	if(m|http/... 401|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+     	if(m|http/... (40\d)|gi) {print STDERR "Error: received '$1' response from server.\n";exit 1}
+     	} if($ok && m/^location/gi) {if(m|.+/qkviews/(\d+)$|gi) {$qkid=$1}}
+    	  if($ok && m/<\?xml/gi) {if(m|<result>(.+)</result>|gi) {print "$qkid $1\n"} exit 0}'
+    else
+      echoerr "Error: '$QKVIEW' not a file or does not exist."
+    fi
+    done
+elif [[ "$module" == "qkviewdelete" ]];
+then
+    if [[ "$#" -gt 0 ]]
+    then
+      for QKVIEWID in "$@"; do
+      if [[ -n "$QKVIEWID" ]] && [[ "$QKVIEWID" =~ ^[0-9]+$ ]]; then
+      curl -si$IHACPROXY -X DELETE -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+       --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+       -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$QKVIEWID \
+       | perl -ne 's/\r\n//g;
+    		if(m|http/... 200|gi) {$ok=1} else {
+    		if(m|http/... 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+    		if(m|http/... 401|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+    		if(m|http/... 404|gi)  {print STDERR "Error: <qkviewID> not found.\n";exit 1}
+    		} if($ok && m/<\?xml/gi) {if(m|<id>(.+)</id>|gi) {print "$1 OK\n"} exit 0}'
+      else
+        echoerr "Error: no <qkviewID> specified or not valid."
+      fi
+      done
+    else
+      echoerr "Error: no <qkviewID> specified or not valid."
+      echoerr "Use: ihac qkviewdelete <qkviewID> [<qkviewID>]"
+      exit 1
+    fi
+elif [[ "$module" == "qkviewget" ]];
+then
+    if [[ -n "$1" ]] && [[ "$1" =~ ^[0-9]+$ ]]
+    then
+      if [[ -n "$2" ]]
+      then
+        curl $IHACPROXY --progress-bar -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+         --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+         -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$1/files/qkview \
+        > $2
+        if [[ $? -eq 0 ]]; then echo "OK"; fi
+      elif [[ ! -t 1 ]]
+      then
+        curl $IHACPROXY --progress-bar -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+         --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+         -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$1/files/qkview
+      else
+        echoerr "Error: no output file specified and no i/o redirection."
+        echoerr "Use: ihac qkviewget <qkviewID> /path/file"
+        echoerr "Use: ihac qkviewget <qkviewID> > /path/file"
+        echoerr "Use: ihac qkviewget <qkviewID> | command"
+        exit 1
+      fi
+    else
+      echoerr "Error: no <qkviewID> specified or not valid."
+      echoerr "Use: ihac qkviewget <qkviewID> /path/file"
+      echoerr "Use: ihac qkviewget <qkviewID> > /path/file"
+      echoerr "Use: ihac qkviewget <qkviewID> | command"
+      exit 1
+    fi
+elif [[ "$module" == "qkviewlist" ]];
+then
+    for id in `curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+     --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+     -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews \
+      | perl -ne 's/\r\n//g;
+    	if(m|http/... 200|gi) {$ok=1} else {
+    	if(m|http/... 30\d|gi) {print STDERR "Error: not authenticated.\n";print "ERR";exit 1}
+    	if(m|http/... 401|gi) {print STDERR "Error: not authenticated.\n";print "ERR";exit 1}
+    	} if($ok && m/<\?xml/gi) {foreach(split /></) {if(m|id>(\d+)</id|gi) {print "$1\n"}} exit 0}'`;
+    do
+      if [[ "$id" == "ERR" ]]; then exit 1; fi
+      if [[ ! "$id" =~ ^[0-9]+$ ]]; then echoerr "Error: $id is not a valid <qkviewID>."; exit 1; fi
+      URLS="$URLS https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$id"
+    done
+    if [[ -z "$URLS" ]]; then echoerr "Error: no <qkviewID>s recevied."; exit 1; fi
+
+    curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+     --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+     -o - \
+     $URLS \
+     | perl -ne 's/\r\n//g;
+        if(m|http/... 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+        if(m|http/... 401|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+        if(!m|http/... (404)|gi && m|http/... (40\d)|gi) {print STDERR "Error: received $1 from server.\n";exit 1}
+        my ($serial, $case, $date, $id) = (); my $hostname = "<Unknown>";
+        if(m|<chassis_serial>(.*)</chassis_serial>|gi) {$serial=$1}
+        if(m|<hostname>(.*)</hostname>|gi) {$hostname=$1}
+        if(m|<f5_support_case>(.*)</f5_support_case>|gi) {$case=$1}
+        if(m|<date>(.*)000</date>|gi) {$date=$1}
+        if(m|<bigip>.*/(\d+)/.*</bigip>|gi) {$id=$1}
+        if (defined($id)) {
+            printf "%8d %-30s %-31s %-12s %s\n", $id, $hostname, $serial, scalar localtime($date), $case;
+            undef $id, $hostname, $serial, $date, $case;
+        }'
+elif [[ "$module" == "qkviewmetadata" ]];
+then
+    if [[ -n "$1" ]] && [[ "$1" =~ ^[0-9]+$ ]]
+    then
+      qkviewid=$1
+      shift
+      if [[ $# -gt 0 ]]; then
+        buildMetadata() {
+          local IFS="&"
+          echo "$*"
+        }
+        metadata=$(buildMetadata $@)
+        curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+         --request POST --data "$metadata" \
+         --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+         -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$qkviewid \
+         | perl -ne 's/\r\n//g;
+            if(m|http/... 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+            if(m|http/... 404|gi) {print STDERR "Error: received $1 from server.\n";exit 1}
+            if(m|http/... 401|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+            if(m/Access denied/gi) {print STDERR "Error: $_\n";exit 1}
+            if(m/qkview edits successful/gi) {exit 0}
+            '
+            if [[ $? -ne 0 ]]; then echoerr "Error: Failed to modify qkview metadata."; exit 1; fi
+      fi
+      curl -si$IHACPROXY -H"Accept: application/vnd.f5.ihealth.api.v1.0" --user-agent "iHAC/$VERSION" \
+       --cookie "$IHACAUTH" --cookie-jar "$IHACAUTH" $IHEALTH2_AUTH_OPTION "$IHEALTH2_AUTH_VALUE" \
+       -o - https://${IHEALTH_API_HOST}/qkview-analyzer/api/qkviews/$qkviewid \
+       | perl -ne 's/\r\n//g;
+          if(m|http/... 30\d|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+          if(m|http/... 401|gi) {print STDERR "Error: not authenticated.\n";exit 1}
+          if(!m|http/... 404|gi && m|http/... (40\d)|gi) {print STDERR "Error: received $1 from server.\n";exit 1}
+          my ($serial, $case, $date, $id) = (); my $hostname = "<Unknown>";
+          my ($visible_in_gui, $description, $generation_date, $expiration_date, $processing_status) = ();
+          if(m|<chassis_serial>(.*)</chassis_serial>|gi) {$serial=$1}
+          if(m|<hostname>(.*)</hostname>|gi) {$hostname=$1}
+          if(m|<visible_in_gui>(.*)</visible_in_gui>|gi) {$visible_in_gui=$1}
+          if(m|<description>(.*)</description>|gi) {$description=$1}
+          if(m|<f5_support_case>(.*)</f5_support_case>|gi) {$case=$1}
+          if(m|<generation_date>(.*)</generation_date>|gi) {$generation_date=$1}
+          if(m|<date>(.*)000</date>|gi) {$date=$1}
+          if(m|<expiration_date>(.*)</expiration_date>|gi) {$expiration_date=$1}
+          if(m|<processing_status>(.*)</processing_status>|gi) {$processing_status=$1}
+          
+          if(m|<bigip>.*/(\d+)/.*</bigip>|gi) {$id=$1}
+          if (defined($id)) {
+              printf "qkviewid=%d\nhostname=%s\nserial=%s\ndate=%s\nf5_support_case=%s\nvisible_in_gui=%s\ndescription=%s\n", $id, $hostname, $serial, scalar localtime($date), $case, $visible_in_gui, $description;
+              printf "generation_date=%s\nexpiration_date=%s\nprocessing_status=%s\n", $generation_date, $expiration_date, $processing_status;
+          }'
+    else
+      echoerr "Error: no <qkviewID> specified or not valid."
+      echoerr "Use: ihac qkviewmetadata <qkviewID> [description=My+Qkview+Description] [visible_in_gui=true] [f5_support_case=12345678] [share_with_case_owner=true]"
+      exit 1
+    fi
+
+elif [[ "$module" == "-h" || "$module" == "--help" || "$module" == "-help" || "$module" == "help" ]];
+then
+    echo "ihac $VERSION ( $IHAC_SITE )"
+    echo "Usage: ihac [module]"
+    echo "Available modules and options:
+    auth
+    authV1
+    commandlist
+        ihac commandlist <qkviewID>
+    commandrun
+        ihac commandrun <qkviewID> 'command'
+    diagnostics
+        ihac diagnostics [--json|--xml] <qkviewID>
+    fileget
+        ihac fileget <qkviewID> /path/file
+        ihac fileget [--output-directory|-o] DIR <qkviewID> /path/file [/path/file2]
+    filelist
+        ihac filelist <qkviewID>
+    qkviewadd
+        ihac qkviewadd /path/file [/path/fileN]
+        cat /path/file | ihac qkviewadd
+    qkviewdelete
+        ihac qkviewdelete <qkviewID> [<qkviewID>]
+    qkviewget
+        ihac qkviewget <qkviewID> /path/file
+        ihac qkviewget <qkviewID> > /path/file
+        ihac qkviewget <qkviewID> | command
+    qkviewlist
+        ihac qkviewlist
+    qkviewmetadata
+        ihac qkviewmetadata <qkviewID> [description=My+Qkview+Description] [visible_in_gui=true] [f5_support_case=12345678] [share_with_case_owner=true]
+    
+    "
+else
+    echoerr "Error: cannot determine iHAC module, valid modules are: $IHAC_MODULES"
+    echoerr "Use: ihac --help"
+    exit 1
+fi

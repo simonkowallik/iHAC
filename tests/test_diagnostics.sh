@@ -14,12 +14,12 @@ qkviewid=$(<./qkviewid)
 
 
 # check if json is returned
-./ihac-diagnostics --json $qkviewid | jq . >/dev/null 2>&1 || exit 1
+./ihac diagnostics --json $qkviewid | jq . >/dev/null 2>&1 || exit 1
 
 
 # check if valid xml is returned
-./ihac-diagnostics --xml $qkviewid | xmllint - >/dev/null 2>&1 || exit 1
+./ihac diagnostics --xml $qkviewid | xmllint - >/dev/null 2>&1 || exit 1
 
 
 # check behaviour when qkview does not exist
-[[ $(./ihac-diagnostics 245245245 2>&1) == "Error: qkview ID not found." ]] || exit 1
+[[ $(./ihac-diagnostics 245245245 2>&1) == "Error: <qkviewID> not found." ]] || exit 1

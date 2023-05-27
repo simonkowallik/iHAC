@@ -13,7 +13,7 @@ jobs:
       - name: install requirements
         run: sudo apt install -y perl libxml-simple-perl libxml2-utils
       - name: checkout git repo
-        uses: actions/checkout@v2 
+        uses: actions/checkout@v3
       #- name: authV1
       #  env:
       #    GH_ACTIONS_IHAC_CREDENTIALS: ${{ secrets.GH_ACTIONS_IHAC_CREDENTIALS }}

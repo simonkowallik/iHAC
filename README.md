@@ -4,8 +4,7 @@
 [![Commits since latest release](https://img.shields.io/github/commits-since/simonkowallik/iHAC/latest.svg)](https://github.com/simonkowallik/iHAC/commits)
 [![Latest Release](https://img.shields.io/github/release-date/simonkowallik/iHAC.svg?color=blue)](https://github.com/simonkowallik/iHAC/releases/latest)
 ## About
-The iHAC (iHealth API Clients) script collection aims to be a simple and easy to use interface to a subset of features provided by [F5 iHealth](https://ihealth.f5.com).
-It uses the [iHealth API](https://devcentral.f5.com/wiki/iHealth.HomePage.ashx) which is documented on [F5 DevCentral](https://devcentral.f5.com).
+The iHAC (iHealth API Clients) script collection aims to be a simple and easy to use interface to a subset of features provided by [F5 iHealth](https://clouddocs.f5.com/api/ihealth/).
 
 ### Feature Overview
 * Upload qkviews

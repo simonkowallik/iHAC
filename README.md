@@ -51,7 +51,7 @@ simon@bigip ~ $ INSTALLDIR=$HOME/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
 	CURL_CA_BUNDLE=/config/ssl/ssl.crt/ca-bundle.crt \
 	curl -L https://github.com/simonkowallik/iHAC/tarball/main \
-	| tar xzv --strip-components 1 --wildcards -C $INSTALLDIR */ihac*; \
+	| tar xzv --strip-components 1 --wildcards -C $INSTALLDIR; \
 	chmod a+x $INSTALLDIR/ihac
 ```
 
@@ -66,7 +66,7 @@ If you want to receive updates when running `brew update` add my tap with `brew 
 simon@macos ~ $ sudo sh -c 'INSTALLDIR=/usr/local/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
 	curl -L https://github.com/simonkowallik/iHAC/tarball/main \
-	| tar xzv --strip-components 1 -C $INSTALLDIR */ihac*; \
+	| tar xzv --strip-components 1 -C $INSTALLDIR; \
 	chmod a+x $INSTALLDIR/ihac'
 ```
 
@@ -75,7 +75,7 @@ simon@macos ~ $ sudo sh -c 'INSTALLDIR=/usr/local/bin; \
 simon@other ~ $ INSTALLDIR=/usr/local/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
 	curl -L https://github.com/simonkowallik/iHAC/tarball/main \
-	| tar xzv --strip-components 1 --wildcards -C $INSTALLDIR */ihac*; \
+	| tar xzv --strip-components 1 --wildcards -C $INSTALLDIR; \
 	chmod a+x $INSTALLDIR/ihac
 ```
 Adjust ```INSTALLDIR``` to your needs. ```/usr/local/bin``` is mounted as read-only on BIG-IP therefore the default above is ```$HOME/bin``` which is in ```PATH``` by default.

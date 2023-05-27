@@ -52,7 +52,7 @@ simon@bigip ~ $ INSTALLDIR=$HOME/bin; \
 	CURL_CA_BUNDLE=/config/ssl/ssl.crt/ca-bundle.crt \
 	curl -L https://github.com/simonkowallik/iHAC/tarball/main \
 	| tar xzv --strip-components 1 --wildcards -C $INSTALLDIR */ihac*; \
-	chmod a+x $INSTALLDIR/ihac *
+	chmod a+x $INSTALLDIR/ihac
 ```
 
 #### Homebrew / Linuxbrew
@@ -67,7 +67,7 @@ simon@macos ~ $ sudo sh -c 'INSTALLDIR=/usr/local/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
 	curl -L https://github.com/simonkowallik/iHAC/tarball/main \
 	| tar xzv --strip-components 1 -C $INSTALLDIR */ihac*; \
-	chmod a+x $INSTALLDIR/ihac *'
+	chmod a+x $INSTALLDIR/ihac'
 ```
 
 #### Other platforms
@@ -76,7 +76,7 @@ simon@other ~ $ INSTALLDIR=/usr/local/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
 	curl -L https://github.com/simonkowallik/iHAC/tarball/main \
 	| tar xzv --strip-components 1 --wildcards -C $INSTALLDIR */ihac*; \
-	chmod a+x $INSTALLDIR/ihac *
+	chmod a+x $INSTALLDIR/ihac
 ```
 Adjust ```INSTALLDIR``` to your needs. ```/usr/local/bin``` is mounted as read-only on BIG-IP therefore the default above is ```$HOME/bin``` which is in ```PATH``` by default.
 

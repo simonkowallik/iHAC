@@ -6,7 +6,7 @@ bigiq_qkviewid=$(<./bigiq_qkviewid)
 
 
 # test qkview deletion
-[[ "$(./ihac-qkviewdelete $bigiq_qkviewid)" == "$bigiq_qkviewid OK" ]] || exit 1
+[[ "$(./ihac qkviewdelete $bigiq_qkviewid)" == "$bigiq_qkviewid OK" ]] || exit 1
 
 
 # check if qkview was removed from ihealth

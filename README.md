@@ -17,6 +17,8 @@ It uses the [iHealth API](https://devcentral.f5.com/wiki/iHealth.HomePage.ashx) 
 * List commands
 * Run commands
 * Show diagnostics
+* Show qkview metadata
+* Set qkview metadata
 
 #### Demo!
 <p align="center">
@@ -30,8 +32,8 @@ This is the list of prerequisites:
 * curl (tested with: 7.15.5 7.19.7, 7.30.0, 7.37.0)
 * bash (tested with: 3.2.25, 3.2.51, 4.1.11)
 * perl (tested with: 5.8.8, 5.14.4, 5.16.2)
-	* XML::Simple (used for ihac-diagnostics XML parsing) 
-	* MIME::Base64 (used for ihac-commandrun output conversion)
+	* XML::Simple (used for ihac diagnostics XML parsing) 
+	* MIME::Base64 (used for ihac commandrun output conversion)
 
 BIG-IP 11.x: Works right away
 
@@ -51,7 +53,7 @@ simon@bigip ~ $ INSTALLDIR=$HOME/bin; \
 	CURL_CA_BUNDLE=/config/ssl/ssl.crt/ca-bundle.crt \
 	curl -L https://github.com/simonkowallik/iHAC/tarball/main \
 	| tar xzv --strip-components 1 --wildcards -C $INSTALLDIR */ihac*; \
-	chmod a+x $INSTALLDIR/ihac-*
+	chmod a+x $INSTALLDIR/ihac *
 ```
 
 #### Homebrew / Linuxbrew
@@ -66,7 +68,7 @@ simon@macos ~ $ sudo sh -c 'INSTALLDIR=/usr/local/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
 	curl -L https://github.com/simonkowallik/iHAC/tarball/main \
 	| tar xzv --strip-components 1 -C $INSTALLDIR */ihac*; \
-	chmod a+x $INSTALLDIR/ihac-*'
+	chmod a+x $INSTALLDIR/ihac *'
 ```
 
 #### Other platforms
@@ -75,7 +77,7 @@ simon@other ~ $ INSTALLDIR=/usr/local/bin; \
 	test -d $INSTALLDIR || mkdir -p $INSTALLDIR; \
 	curl -L https://github.com/simonkowallik/iHAC/tarball/main \
 	| tar xzv --strip-components 1 --wildcards -C $INSTALLDIR */ihac*; \
-	chmod a+x $INSTALLDIR/ihac-*
+	chmod a+x $INSTALLDIR/ihac *
 ```
 Adjust ```INSTALLDIR``` to your needs. ```/usr/local/bin``` is mounted as read-only on BIG-IP therefore the default above is ```$HOME/bin``` which is in ```PATH``` by default.
 
@@ -91,28 +93,46 @@ If the CA chain validation for github.com fails on your system, you might try th
 If you need a proxy, use curls proxy option ```-x http://192.0.2.245:8080```.
 
 ### 3. Run
+
 Have fun. :)
 
 ## Usage
 
-### ihac-auth
+### ihac auth
+
 Interactive authentication
+
 ```sh
-simon@bigip ~ $ ihac-auth
+simon@bigip ~ $ ihac authV1
 Username: simon@example.com
 Password:
 OK
 ```
 
-JSON formatted credentials as an argument
 ```sh
-simon@bigip ~ $ ihac-auth '{"user_id": "simon@example.com", "user_secret": "MyP@ssw0rd"}'
+simon@bigip ~ $ ihac auth
+Client ID: i00000OiJpUndzU0RJRW
+Client Secret: 
+OK
+```
+
+JSON formatted credentials as an argument (authV1)
+
+```sh
+simon@bigip ~ $ ihac authV1 '{"user_id": "simon@example.com", "user_secret": "MyP@ssw0rd"}'
+OK
+```
+
+client ID and client Secret as an argument for iHealth2
+
+```sh
+simon@bigip ~ $ ihac auth 'client_id:client_secret'
 OK
 ```
 
 JSON formatted credentials via STDIN
 ```sh
-simon@bigip ~ $ cat $HOME/credentials.json | ihac-auth
+simon@bigip ~ $ cat $HOME/credentials.json | ihac authV1
 
 simon@bigip ~ $ cat $HOME/credentials.json
 {"user_id": "simon@example.com", "user_secret": "MyP@ssw0rd"}
@@ -120,14 +140,14 @@ simon@bigip ~ $ cat $HOME/credentials.json
 
 De-authenticate / delete session cookies
 ```sh
-simon@bigip ~ $ ihac-auth [--delete | -d | delete | --logout]
+simon@bigip ~ $ ihac authV1 [--delete | -d | delete | --logout]
 OK
 ```
 
-### ihac-qkviewadd
+### ihac qkviewadd
 Adds qkview to iHealth, qkview file supplied as argument. You can specify as many qkviews as arguments as you want.
 ```sh
-simon@bigip ~ $ ihac-qkviewadd ../bigip1141.qkview ./bigip1151.qkview bigip1160.qkview
+simon@bigip ~ $ ihac qkviewadd ../bigip1141.qkview ./bigip1151.qkview bigip1160.qkview
 ################################################################## 100.0%
 2257810 OK
 ################################################################## 100.0%
@@ -138,15 +158,15 @@ simon@bigip ~ $ ihac-qkviewadd ../bigip1141.qkview ./bigip1151.qkview bigip1160.
 
 Adds qkview to iHealth, qkview file supplied via STDIN
 ```sh
-simon@bigip ~ $ cat ../qkviews/bigip1151.qkview | ihac-qkviewadd
+simon@bigip ~ $ cat ../qkviews/bigip1151.qkview | ihac qkviewadd
 ################################################################## 100.0%
 2257819 OK
 ```
 
-### ihac-qkviewlist
+### ihac qkviewlist
 Lists all qkviews available on iHealth
 ```sh
-simon@bigip ~ $ ihac-qkviewlist
+simon@bigip ~ $ ihac qkviewlist
 2257819 bigip1151.example.com SerialNumber	  May 8 2014, 21:12:29 AM (GMT) OptionalCaseNumber
 2257811 bigip1151.example.com SerialNumber	  May 8 2014, 21:10:19 AM (GMT) OptionalCaseNumber
 2254055 bigip1151.example.com SerialNumber	  May 7 2014, 20:59:32 AM (GMT) OptionalCaseNumber
@@ -154,10 +174,10 @@ simon@bigip ~ $ ihac-qkviewlist
 ```
 The first column displays the qkview ID, which is important for all commands below.
 
-### ihac-qkviewget
+### ihac qkviewget
 Dowloads qkview from iHealth, output file specified as argument
 ```sh
-simon@bigip ~ $ ihac-qkviewget 2254055 ../qkview/2254055.qkview.tgz
+simon@bigip ~ $ ihac qkviewget 2254055 ../qkview/2254055.qkview.tgz
 ################################################################## 100.0%
 OK
 
@@ -167,7 +187,7 @@ simon@bigip ~ $ ls -la 2254055.qkview.tgz
 
 Dowloads qkview from iHealth, outputs to STDOUT
 ```sh
-simon@bigip ~ $ ihac-qkviewget 2254011 | gzip -d > 2254011.qkview.tar
+simon@bigip ~ $ ihac qkviewget 2254011 | gzip -d > 2254011.qkview.tar
 ################################################################## 100.0%
 OK
 
@@ -175,18 +195,18 @@ simon@bigip ~ $ ls -la 2254011.qkview.tar
 -rw-r--r-- 1 simon users 136547328 May  8 21:23 2254011.qkview.tar
 ```
 
-### ihac-qkviewdelete
+### ihac qkviewdelete
 Deletes qkview from iHealth. You can specify as many qkview IDs as arguments as you want.
 ```sh
-simon@bigip ~ $ ihac-qkviewdelete 2257810 2257812
+simon@bigip ~ $ ihac qkviewdelete 2257810 2257812
 2257810 OK
 2257812 OK
 ```
 
-### ihac-filelist
+### ihac filelist
 Lists all files for a specific qkview, outputs filenames with path to STDOUT
 ```sh
-simon@bigip ~ $ ihac-filelist 2254055 | grep /config/bigip | head -5
+simon@bigip ~ $ ihac filelist 2254055 | grep /config/bigip | head -5
 /config/bigip_base.conf.bak
 /config/bigip.conf.bak
 /config/bigip_script.conf.bak
@@ -194,10 +214,10 @@ simon@bigip ~ $ ihac-filelist 2254055 | grep /config/bigip | head -5
 /config/bigip.conf
 ```
 
-### ihac-fileget
+### ihac fileget
 Get file from qkview on iHealth, outputs file content to STDOUT
 ```sh
-simon@bigip ~ $ ihac-fileget 2254055 /config/bigip.conf | head
+simon@bigip ~ $ ihac fileget 2254055 /config/bigip.conf | head
 #TMSH-VERSION: 11.5.1
 
 apm client-packaging /Common/client-packaging { }
@@ -212,7 +232,7 @@ ltm node /Common/10.0.0.10 {
 
 fetching multiple files (supports wildcards) and placing them in a directory
 ```sh
-simon@bigip ~ $ ihac-fileget 2254055 --output-directory ./qkview/ /config/bigip*.conf /PLATFORM
+simon@bigip ~ $ ihac fileget 2254055 --output-directory ./qkview/ /config/bigip*.conf /PLATFORM
 simon@bigip ~ $ find ./qkview/ -type f
 ./qkview/config/bigip_user.conf
 ./qkview/config/bigip_base.conf
@@ -220,10 +240,10 @@ simon@bigip ~ $ find ./qkview/ -type f
 ./qkview/PLATFORM
 ```
 
-### ihac-commandlist
+### ihac commandlist
 Lists all commands available for a specific qkview, outputs command list to STDOUT
 ```sh
-simon@bigip ~ $ ihac-commandlist 2254055 | grep /sys | head
+simon@bigip ~ $ ihac commandlist 2254055 | grep /sys | head
 show running-config /sys management-ip
 show running-config /sys management-route all-properties
 list /sys application service recursive all-properties
@@ -236,10 +256,10 @@ list /sys disk all-properties
 list /sys feature-module all-properties
 ```
 
-### ihac-commandrun
+### ihac commandrun
 Fetches command output from qkview on iHealth to STDOUT
 ```sh
-simon@bigip ~ $ ihac-commandrun 2254055 ‘show /sys provision’
+simon@bigip ~ $ ihac commandrun 2254055 ‘show /sys provision’
 -------------------------------------------------------------
 Sys::Provision
 Module   CPU (%)   Memory (MB)   Host-Memory (MB)   Disk (MB)
@@ -258,14 +278,14 @@ tmos          88          4640                280           0
 ui             0           224                  0           0
 vcmp           0             0                  0           0
 
-simon@bigip ~ # ihac-commandrun 2254055 'tmctl -a (blade)' | wc -l
+simon@bigip ~ # ihac commandrun 2254055 'tmctl -a (blade)' | wc -l
 4757
 ```
 
-### ihac-diagnostics
+### ihac diagnostics
 Fetch iHealth Diagnostics and output to STDOUT
 ```sh
-simon@bigip ~ $ ihac-diagnostics 2254055 | head
+simon@bigip ~ $ ihac diagnostics 2254055 | head
 Hostname: bip1141.example.net    Serial: Serial Number
 Version: Version		  	     Platform: Platform
 
@@ -277,32 +297,32 @@ Version: Version		  	     Platform: Platform
 
 Filter for Severity with egrep
 ```sh
-simon@bigip ~ $ ihac-diagnostics 2254055 | egrep -A3 "MEDIUM|^(P|H)"
-simon@bigip ~ $ ihac-diagnostics 2254055 | egrep -A3 "HIGH|MEDIUM|^(P|H)"
+simon@bigip ~ $ ihac diagnostics 2254055 | egrep -A3 "MEDIUM|^(P|H)"
+simon@bigip ~ $ ihac diagnostics 2254055 | egrep -A3 "HIGH|MEDIUM|^(P|H)"
 ```
 
 Output JSON or XML for further processing
 ```sh
-simon@bigip ~ $ ihac-diagnostics --json 2254055 | jq .
-simon@bigip ~ $ ihac-diagnostics --xml 2254055 | xq
+simon@bigip ~ $ ihac diagnostics --json 2254055 | jq .
+simon@bigip ~ $ ihac diagnostics --xml 2254055 | xq
 ```
 
 ## Proxy Support
 Specify environment variable before executing an ihac script
 ```sh
-simon@bigip ~ $ IHACPROXY=http://localhost:8080 ihac-*
+simon@bigip ~ $ IHACPROXY=http://localhost:8080 ihac *
 ```
 
 Set environment variable which is then used by all further ihac scripts executed in the same session
 ```sh
 simon@bigip ~ $ export IHACPROXY=http://localhost:8080
-simon@bigip ~ $ ihac-*
+simon@bigip ~ $ ihac *
 ```
 
 Set a permanent proxy
 ```sh
 simon@bigip ~ $ echo ‘http://localhost:8080’ > $HOME/.ihac/IHACPROXY
-simon@bigip ~ $ ihac-*
+simon@bigip ~ $ ihac *
 ```
 
 Note: Environment variable will always have precedence
@@ -325,9 +345,9 @@ total 4
 -rw------- 1 simon users 1531 May 11 23:37 auth.jar
 ```
 
-Session cookies can be deleted by ihac-auth or manually by the user.
+Session cookies can be deleted by ihac auth or manually by the user.
 ```sh
-simon@bigip ~ $ ihac-auth --logout
+simon@bigip ~ $ ihac auth --logout
 OK
 
 simon@bigip ~ $ file $HOME/.ihac/auth.jar
@@ -336,10 +356,14 @@ simon@bigip ~ $ file $HOME/.ihac/auth.jar
 simon@bigip ~ $ rm -f $HOME/.ihac/auth.jar
 ```
 
+### iHealth2 API access_token
+
+The access_token is valid for 1800 seconds and stored in `$HOME/.ihac/auth_token.txt`.
+
 ## Usage Examples
 Pipe credentials from local to remote system for authentication and list all qkviews available on iHealth
 ```sh
-~ $ cat $HOME/auth.txt | ssh root@192.168.1.245 '/root/bin/ihac-auth;/root/bin/ihac-qkviewlist'
+~ $ cat $HOME/auth.txt | ssh root@192.168.1.245 '/root/bin/ihac auth;/root/bin/ihac qkviewlist'
 Password:
 OK
 2483776 bigip.example.com           0570271                Jun 30 2014, 06:59:43 PM (GMT)
@@ -348,7 +372,7 @@ OK
 
 Pipe local qkview file to remote system and upload to iHealth
 ```sh
-~ $ cat qkview/bigip1141.qkview.tgz | ssh root@192.168.1.245 '/root/bin/ihac-qkviewadd'
+~ $ cat qkview/bigip1141.qkview.tgz | ssh root@192.168.1.245 '/root/bin/ihac qkviewadd'
 Password:
 ################################################################## 100.0%
 OK
@@ -356,12 +380,12 @@ OK
 
 Get file from iHealth and send to remote system
 ```sh
-~ $ ihac-fileget 2521684 /config/bigip.conf | ssh root@192.168.1.245 'cat > /tmp/bigip.conf'
+~ $ ihac fileget 2521684 /config/bigip.conf | ssh root@192.168.1.245 'cat > /tmp/bigip.conf'
 ```
 
 Generate qkview on remote system, send via pipe to local system and upload to iHealth
 ```sh
-~ $ ssh root@192.168.1.245 'qkview -f /var/tmp/qkview.tgz;cat /var/tmp/qkview.tgz' | ihac-qkviewadd
+~ $ ssh root@192.168.1.245 'qkview -f /var/tmp/qkview.tgz;cat /var/tmp/qkview.tgz' | ihac qkviewadd
 Password:
 Gathering System Diagnostics: Please wait ...
 Diagnostic information has been saved in:

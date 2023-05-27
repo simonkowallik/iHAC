@@ -22,4 +22,4 @@ qkviewid=$(<./qkviewid)
 
 
 # check behaviour when qkview does not exist
-[[ $(./ihac-diagnostics 245245245 2>&1) == "Error: qkview ID not found." ]] || exit 1
+[[ $(./ihac-diagnostics 245245245 2>&1) == "Error: <qkviewID> not found." ]] || exit 1

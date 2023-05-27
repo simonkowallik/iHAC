@@ -19,7 +19,3 @@ bigiq_qkviewid=$(<./bigiq_qkviewid)
 
 # check if valid xml is returned
 ./ihac diagnostics --xml $bigiq_qkviewid | xmllint - >/dev/null 2>&1 || exit 1
-
-
-# check behaviour when qkview does not exist
-[[ $(./ihac-diagnostics 245245245 2>&1) == "Error: qkview ID not found." ]] || exit 1

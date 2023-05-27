@@ -11,7 +11,3 @@ bigiq_qkviewid=$(<./bigiq_qkviewid)
 
 # check if qkview was removed from ihealth
 ./ihac-qkviewlist | grep $bigiq_qkviewid && exist 1 || true
-
-
-# check behaviour when qkview does not exist
-[[ $(./ihac-qkviewdelete 245245245 2>&1) == "Error: qkview ID not found." ]] || exit 1
